@@ -56,16 +56,16 @@ async def question_answers(dialog_manager: DialogManager, **kwargs):
 
 # Сообщение с вебинаром первого урока Keyway
 vebinar = Window(
-    Const(text="<b>Запись первого вебинара по обучению Keyway</b>\n"
-               "Не грузится видео? Посмотри по ссылке: <a href='https://vkvideo.ru/video-140176277_456239900?list=ln-UAKsiNMIsltON3ulS9'>Вебинар 1</a>"),
-    # StaticMedia(
-    #     path=BASE_DIR / "media" / "video" / "vebinar_keyway_1.mp4",
-    #     type=ContentType.VIDEO,
-    #     media_params={"supports_streaming": True,
-    #                   "width": 640,
-    #                   "height": 480,
-    #                   },
-    # ),
+    Const(text="<b>Запись первого урока Hite PRO!</b>\n"
+               "Не грузится видео? Посмотри по ссылке: <a href='https://drive.google.com/file/d/1Pwg4YnD1fK5RJAvLxyzrcccPUPG_2nmy/view?usp=sharing'>Урок 1</a>"),
+    StaticMedia(
+        path=BASE_DIR / "media" / "video" / "hp_lesson_1.mp4",
+        type=ContentType.VIDEO,
+        media_params={"supports_streaming": True,
+                      "width": 640,
+                      "height": 480,
+                      },
+    ),
     Group(
         Row(
             Cancel(Const('Назад'), id='go_cancel_dialog'),
@@ -159,13 +159,13 @@ first_question = Window(
     Format(text="<b>Вопрос #{quest_number} из {count_quest}:\n\n{title}</b>\n{multi}"),
     Group(
         Column(
-            Multiselect(
-                checked_text=Format('✅ {item[0]}'),
-                unchecked_text=Format('️◻️ {item[0]}'),
-                id='first_question_answers_checked',
+            Radio(
+                checked_text=Format('🟢 Вариант {item[1]}'),
+                unchecked_text=Format('⚪ Вариант {item[1]}'),
+                id='second_question_answers_checked',
                 item_id_getter=operator.itemgetter(1),
                 items="question_answers",
-                on_state_changed=multiselect_question_answers_checked,
+                on_state_changed=radio_question_answers_checked,
             )),
         base_row_buttons,
         confirm_stage_row_buttons,
@@ -244,13 +244,13 @@ fifth_question = Window(
     Format(text="<b>Вопрос #{quest_number} из {count_quest}:\n\n{title}</b>\n{radio}"),
     Group(
         Column(
-            Radio(
-                checked_text=Format('🟢 {item[0]}'),
-                unchecked_text=Format('⚪ {item[0]}'),
-                id='fifth_question_answers_checked',
+            Multiselect(
+                checked_text=Format('✅ {item[0]}'),
+                unchecked_text=Format('️◻️ {item[0]}'),
+                id='seventh_question_answers_checked',
                 item_id_getter=operator.itemgetter(1),
                 items="question_answers",
-                on_state_changed=radio_question_answers_checked,
+                on_state_changed=multiselect_question_answers_checked,
             )),
         base_row_buttons,
         confirm_stage_row_buttons,
@@ -284,13 +284,13 @@ seventh_question = Window(
     Format(text="<b>Вопрос #{quest_number} из {count_quest}:\n\n{title}</b>\n{multi}"),
     Group(
         Column(
-            Multiselect(
-                checked_text=Format('✅ {item[0]}'),
-                unchecked_text=Format('️◻️ {item[0]}'),
-                id='seventh_question_answers_checked',
+            Radio(
+                checked_text=Format('🟢 Вариант {item[1]}'),
+                unchecked_text=Format('⚪ Вариант {item[1]}'),
+                id='sixth_question_answers_checked',
                 item_id_getter=operator.itemgetter(1),
                 items="question_answers",
-                on_state_changed=multiselect_question_answers_checked,
+                on_state_changed=radio_question_answers_checked,
             )),
         base_row_buttons,
         confirm_stage_row_buttons,

@@ -138,16 +138,16 @@ result_row_button: Row = Row(
 
 
 vebinar_1 = Window(
-    Const(text="<b>Запись третьего вебинара по обучению Keyway</b>\n"
-               "Не грузится видео? Посмотри по ссылке: <a href='https://vk.com/video-231886927_456239078?list=ln-8hbcbOwEuNM1DmH2ij'>Вебинар 3</a>"),
-    # StaticMedia(
-    #     path=BASE_DIR / "media" / "video" / "vebinar_keyway_3.mp4",
-    #     type=ContentType.VIDEO,
-    #     media_params={"supports_streaming": True,
-    #                   "width": 1920,
-    #                   "height": 1080,
-    #                   },
-    # ),
+    Const(text="<b>Запись третьего урока HiTE PRO!</b>\n"
+               "Не грузится видео? Посмотри по ссылке: <a href='https://drive.google.com/file/d/1GL9EtnYC3FGEyTW4CHspot7MEO_EHWbG/view?usp=sharing'>Урок 3</a>"),
+    StaticMedia(
+        path=BASE_DIR / "media" / "video" / "hp_lesson_3.mp4",
+        type=ContentType.VIDEO,
+        media_params={"supports_streaming": True,
+                      "width": 1920,
+                      "height": 1080,
+                      },
+    ),
     Group(
         Row(
             Cancel(Const('Назад'), id='go_cancel_dialog'),
@@ -203,13 +203,13 @@ third_question = Window(
     Format(text="<b>Вопрос #{quest_number} из {count_quest}:\n\n{title}</b>\n{radio}\n\n{text_answers}"),
     Group(
         Column(
-            Radio(
-                checked_text=Format('🟢 Вариант {item[1]}'),
-                unchecked_text=Format('⚪ Вариант {item[1]}'),
-                id='third_question_answers_checked',
+            Multiselect(
+                checked_text=Format('✅ {item[0]}'),
+                unchecked_text=Format('️◻️ {item[0]}'),
+                id='fifth_question_answers_checked',
                 item_id_getter=operator.itemgetter(1),
                 items="question_answers",
-                on_state_changed=radio_question_answers_checked,
+                on_state_changed=multiselect_question_answers_checked,
             )),
         base_row_buttons,
         confirm_stage_row_buttons,
@@ -248,13 +248,13 @@ fifth_question = Window(
     ),
     Group(
         Column(
-            Multiselect(
-                checked_text=Format('✅ {item[0]}'),
-                unchecked_text=Format('️◻️ {item[0]}'),
-                id='fifth_question_answers_checked',
+            Radio(
+                checked_text=Format('🟢 Вариант {item[1]}'),
+                unchecked_text=Format('⚪ Вариант {item[1]}'),
+                id='fourth_question_answers_checked',
                 item_id_getter=operator.itemgetter(1),
                 items="question_answers",
-                on_state_changed=multiselect_question_answers_checked,
+                on_state_changed=radio_question_answers_checked,
             )),
         base_row_buttons,
         confirm_stage_row_buttons,
