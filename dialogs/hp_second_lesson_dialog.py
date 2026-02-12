@@ -140,14 +140,14 @@ result_row_button: Row = Row(
 vebinar_1 = Window(
     Const(text="<b>Запись второго вебинара по обучению Keyway</b>\n"
                "Не грузится видео? Посмотри по ссылке: <a href='https://vk.com/video-140176277_456239912?list=ln-nZsGXKUvDc299lvbl8'>Вебинар 2</a>"),
-    StaticMedia(
-        path=BASE_DIR / "media" / "video" / "vebinar_keyway_2.mp4",
-        type=ContentType.VIDEO,
-        media_params={"supports_streaming": True,
-                      "width": 1280,
-                      "height": 720,
-                      },
-    ),
+    # StaticMedia(
+    #     path=BASE_DIR / "media" / "video" / "vebinar_keyway_2.mp4",
+    #     type=ContentType.VIDEO,
+    #     media_params={"supports_streaming": True,
+    #                   "width": 1280,
+    #                   "height": 720,
+    #                   },
+    # ),
     Group(
         Row(
             Cancel(Const('Назад'), id='go_cancel_dialog'),

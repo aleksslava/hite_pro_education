@@ -58,14 +58,14 @@ async def question_answers(dialog_manager: DialogManager, **kwargs):
 vebinar = Window(
     Const(text="<b>Запись первого вебинара по обучению Keyway</b>\n"
                "Не грузится видео? Посмотри по ссылке: <a href='https://vkvideo.ru/video-140176277_456239900?list=ln-UAKsiNMIsltON3ulS9'>Вебинар 1</a>"),
-    StaticMedia(
-        path=BASE_DIR / "media" / "video" / "vebinar_keyway_1.mp4",
-        type=ContentType.VIDEO,
-        media_params={"supports_streaming": True,
-                      "width": 640,
-                      "height": 480,
-                      },
-    ),
+    # StaticMedia(
+    #     path=BASE_DIR / "media" / "video" / "vebinar_keyway_1.mp4",
+    #     type=ContentType.VIDEO,
+    #     media_params={"supports_streaming": True,
+    #                   "width": 640,
+    #                   "height": 480,
+    #                   },
+    # ),
     Group(
         Row(
             Cancel(Const('Назад'), id='go_cancel_dialog'),
