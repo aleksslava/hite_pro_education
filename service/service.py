@@ -173,8 +173,8 @@ async def get_lessons_buttons(user: User, session: AsyncSession) -> dict:
             if all(completed.values()):
                 break
 
-    for index, lesson in enumerate(lessons, 1):
-        if index == '1':
+    for index, lesson in enumerate(lessons):
+        if index == 0:
             lessons_access[lesson['title']] = compleat_icon + lesson['descr'] if completed[lesson['title']] else ready_icon + lesson['descr']
         else:
             if completed[lesson['title']]:
