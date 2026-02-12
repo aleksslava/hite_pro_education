@@ -532,37 +532,37 @@ urls_to_messanger = {
 }
 
 
-lessons = [
-    {'1': {
+lessons: list[dict] = [
+    {
         'title': 'lesson_1',
         'descr': 'Урок 1'
-    }},
-    {'2': {
+    },
+    {
             'title': 'lesson_2',
             'descr': 'Урок 2'
-        }},
-    {'3': {
+    },
+    {
             'title': 'lesson_3',
             'descr': 'Урок 3'
-        }},
-    {'4': {
+    },
+    {
             'title': 'lesson_4',
             'descr': 'Урок 4'
-        }},
-    {'5': {
+    },
+    {
             'title': 'lesson_5',
             'descr': 'Урок 5'
-        }},
-    {'6': {
+    },
+    {
             'title': 'lesson_6',
             'descr': 'Урок 6'
-        }},
-    {'7': {
+    },
+    {
             'title': 'lesson_7',
             'descr': 'Урок 7'
-        }},
-    {'8': {
+    },
+    {
             'title': 'exam',
             'descr': 'Экзамен'
-        }}
+    }
 ]
