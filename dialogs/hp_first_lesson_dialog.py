@@ -143,7 +143,7 @@ base_row_buttons: Row = Row(
 
 async def checking_missed_answers(callback: CallbackQuery, button: Button, dialog_manager: DialogManager):
     third_lesson_result = dialog_manager.dialog_data.get('answers', {})
-    if await count_missed_answers(answers=third_lesson_result, total_questions=18) > 0:
+    if await count_missed_answers(answers=third_lesson_result, total_questions=len(questions)) > 0:
         await callback.answer('❗️Ответьте на все вопросы❗️', show_alert=True)
     else:
         await dialog_manager.switch_to(HpFirstLessonDialog.result_first_lesson)
