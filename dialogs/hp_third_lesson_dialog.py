@@ -36,7 +36,7 @@ async def question_answers(dialog_manager: DialogManager, **kwargs):
 
     text_answers = '<b>Варианты ответов:</b>\n'
     for index, item in enumerate(question_answers, start=1):
-        text_answers += f'• {index}) {item[0]}\n\n'
+        text_answers += f'{index}) {item[0]}\n\n'
 
     max_answer_len = len(max(map(lambda x: x[0], question_answers), key=len))
     question_answers = [
@@ -47,7 +47,7 @@ async def question_answers(dialog_manager: DialogManager, **kwargs):
     return {"question_answers": question_answers,
             "title": title,
             'quest_number': key[1:],
-            'count_quest': '18',
+            'count_quest': str(len(questions)),
             'text_answers': text_answers,
             'multi': explan.get('multi'),
             'radio': explan.get('radio'),
@@ -268,7 +268,7 @@ fifth_question = Window(
 
 async def confirm_answers_getter(dialog_manager: DialogManager, **kwargs):
     first_lesson_answers = dialog_manager.dialog_data.get('answers', {})
-    message = format_progress(first_lesson_answers, total_questions=18)
+    message = format_progress(first_lesson_answers, total_questions=len(questions))
     dialog_manager.dialog_data['confirm_stage'] = True
     return {'message': message,
             'dont_first_question': True,
@@ -295,10 +295,10 @@ async def result_getter(dialog_manager: DialogManager, **kwargs):
     lesson_id = dialog_manager.start_data.get('lesson_id')
     third_lesson_result = dialog_manager.dialog_data.get('answers', {})
 
-    checking = checking_result(answers=third_lesson_result, total_questions=5)
+    checking = checking_result(answers=third_lesson_result, total_questions=len(questions))
     score = checking.get('score')
     compleat = checking.get('passed')
-    result = format_results(third_lesson_result, total_questions=5)
+    result = format_results(third_lesson_result, total_questions=len(questions))
 
     logger.info(
         f'Запущена проверка результатов третьего урока keyway. Пользователь tg_id {tg_id}. Результат проверки: баллов - {score}')
@@ -327,7 +327,7 @@ async def result_getter(dialog_manager: DialogManager, **kwargs):
 
         # Перемещаем сделку далее по воронке обучения, если успешно. В сделку записываем примечание с результатами
         if compleat:
-            amo_api.push_lead_to_status(pipeline_id=pipelines.get('keyway_education'),
+            amo_api.push_lead_to_status(pipeline_id=pipelines.get('hite_pro_education'),
                                         status_id=status_fields.get('compleat_lesson_3'),
                                         lead_id=str(user.amo_deal_id))
     return {'result': result,

@@ -34,7 +34,7 @@ async def question_answers(dialog_manager: DialogManager, **kwargs):
     dont_last_question = True
     text_answers = '<b>Варианты ответов:</b>\n\n'
     for index, item in enumerate(question_answers, start=1):
-        text_answers += f'• {index}) {item[0]}\n\n'
+        text_answers += f'{index}) {item[0]}\n\n'
 
     max_answer_len = len(max(map(lambda x: x[0], question_answers), key=len))
     question_answers = [
@@ -45,7 +45,7 @@ async def question_answers(dialog_manager: DialogManager, **kwargs):
     return {"question_answers": question_answers,
             "title": title,
             'quest_number': key[1:],
-            'count_quest': '23',
+            'count_quest': str(len(questions)),
             'text_answers': text_answers,
             'multi': explan.get('multi'),
             'radio': explan.get('radio'),
@@ -364,7 +364,7 @@ tenth_question = Window(
 
 async def confirm_answers_getter(dialog_manager: DialogManager, **kwargs):
     first_lesson_answers = dialog_manager.dialog_data.get('answers', {})
-    message = format_progress(first_lesson_answers, total_questions=23)
+    message = format_progress(first_lesson_answers, total_questions=len(questions))
     dialog_manager.dialog_data['confirm_stage'] = True
     return {'message': message,
             'dont_first_question': True,
@@ -389,10 +389,10 @@ async def result_getter(dialog_manager: DialogManager, **kwargs):
     tg_id = dialog_manager.event.from_user.id
     lesson_id = dialog_manager.start_data.get('lesson_id')
     first_lesson_result = dialog_manager.dialog_data.get('answers', {})
-    checking = checking_result(answers=first_lesson_result, total_questions=23)
+    checking = checking_result(answers=first_lesson_result, total_questions=len(questions))
     score = checking.get('score')
     compleat = checking.get('passed')
-    result = format_results(first_lesson_result, total_questions=23)
+    result = format_results(first_lesson_result, total_questions=len(questions))
 
     logger.info(f'Запущена проверка результатов первого урока keyway. Пользователь tg_id {tg_id}. Результат проверки: баллов - {score}')
 

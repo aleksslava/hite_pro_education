@@ -11,7 +11,8 @@ from aiogram_dialog import Dialog, Window, DialogManager, StartMode, ShowMode
 
 from amo_api.amo_service import processing_contact, processing_lead
 from fsm_forms.fsm_models import MainDialog, HpFirstLessonDialog, HpSecondLessonDialog, HpThirdLessonDialog, \
-    AdminDialog
+    AdminDialog, HpFourthLessonDialog, HpFifthLessonDialog, HpSixthLessonDialog, HpSeventhLessonDialog, \
+    HpExamLessonDialog
 from aiogram.types import ReplyKeyboardMarkup, KeyboardButton
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
@@ -201,8 +202,150 @@ async def third_lesson_start(callback: CallbackQuery, button: Button, dialog_man
         ):
             await dialog_manager.start(HpThirdLessonDialog.vebinar_1, mode=StartMode.NORMAL, data={'lesson_id': lesson.id})
 
+async def fourth_lesson_start(callback: CallbackQuery, button: Button, dialog_manager: DialogManager):
+    session: AsyncSession = dialog_manager.middleware_data['session']
+    tg_id = dialog_manager.event.from_user.id
+    logger.info(f'Запущен четвертый урок пользователем tg_ID:{tg_id}')
+    result = await session.execute(select(User).where(User.tg_user_id == tg_id))
+    user = result.scalar_one_or_none()
+    if user is None:
+        raise ValueError(f'Пользователь не найден при переходе в урок 4, tg_id: {tg_id}')
+    lesson_deny = await lesson_access(user=user, session=session, lesson_key='lesson_4')
+    if not lesson_deny:
+        await callback.answer('Доступ закрыт!😢\n\nТребуется успешное прохождение урока №3!', show_alert=True)
+    else:
+        lesson = LessonResult(
+            user_id=user.id,
+            lesson_key='lesson_4',
+        )
+        session.add(lesson)
+        await session.commit()
+        await session.refresh(lesson)
+        logger.info(f'Запущен четвертый урок пользователем tg_ID:{tg_id}. ID урока в БД - {lesson.id}')
+        await callback.answer()
+        async with ChatActionSender.upload_video(
+                bot=dialog_manager.middleware_data['bot'],
+                chat_id=callback.message.chat.id,
+                interval=4.0,
+                initial_sleep=0.0,
+        ):
+            await dialog_manager.start(HpFourthLessonDialog.vebinar_1, mode=StartMode.NORMAL, data={'lesson_id': lesson.id})
 
+async def fifth_lesson_start(callback: CallbackQuery, button: Button, dialog_manager: DialogManager):
+    session: AsyncSession = dialog_manager.middleware_data['session']
+    tg_id = dialog_manager.event.from_user.id
+    logger.info(f'Запущен пятый урок пользователем tg_ID:{tg_id}')
+    result = await session.execute(select(User).where(User.tg_user_id == tg_id))
+    user = result.scalar_one_or_none()
+    if user is None:
+        raise ValueError(f'Пользователь не найден при переходе в урок 5, tg_id: {tg_id}')
+    lesson_deny = await lesson_access(user=user, session=session, lesson_key='lesson_5')
+    if not lesson_deny:
+        await callback.answer('Доступ закрыт!😢\n\nТребуется успешное прохождение урока №4!', show_alert=True)
+    else:
+        lesson = LessonResult(
+            user_id=user.id,
+            lesson_key='lesson_5',
+        )
+        session.add(lesson)
+        await session.commit()
+        await session.refresh(lesson)
+        logger.info(f'Запущен пятый урок пользователем tg_ID:{tg_id}. ID урока в БД - {lesson.id}')
+        await callback.answer()
+        async with ChatActionSender.upload_video(
+                bot=dialog_manager.middleware_data['bot'],
+                chat_id=callback.message.chat.id,
+                interval=4.0,
+                initial_sleep=0.0,
+        ):
+            await dialog_manager.start(HpFifthLessonDialog.vebinar_1, mode=StartMode.NORMAL, data={'lesson_id': lesson.id})
 
+async def sixth_lesson_start(callback: CallbackQuery, button: Button, dialog_manager: DialogManager):
+    session: AsyncSession = dialog_manager.middleware_data['session']
+    tg_id = dialog_manager.event.from_user.id
+    logger.info(f'Запущен шестой урок пользователем tg_ID:{tg_id}')
+    result = await session.execute(select(User).where(User.tg_user_id == tg_id))
+    user = result.scalar_one_or_none()
+    if user is None:
+        raise ValueError(f'Пользователь не найден при переходе в урок 6, tg_id: {tg_id}')
+    lesson_deny = await lesson_access(user=user, session=session, lesson_key='lesson_6')
+    if not lesson_deny:
+        await callback.answer('Доступ закрыт!😢\n\nТребуется успешное прохождение урока №5!', show_alert=True)
+    else:
+        lesson = LessonResult(
+            user_id=user.id,
+            lesson_key='lesson_6',
+        )
+        session.add(lesson)
+        await session.commit()
+        await session.refresh(lesson)
+        logger.info(f'Запущен шестой урок пользователем tg_ID:{tg_id}. ID урока в БД - {lesson.id}')
+        await callback.answer()
+        async with ChatActionSender.upload_video(
+                bot=dialog_manager.middleware_data['bot'],
+                chat_id=callback.message.chat.id,
+                interval=4.0,
+                initial_sleep=0.0,
+        ):
+            await dialog_manager.start(HpSixthLessonDialog.vebinar_1, mode=StartMode.NORMAL, data={'lesson_id': lesson.id})
+
+async def seventh_lesson_start(callback: CallbackQuery, button: Button, dialog_manager: DialogManager):
+    session: AsyncSession = dialog_manager.middleware_data['session']
+    tg_id = dialog_manager.event.from_user.id
+    logger.info(f'Запущен седьмой урок пользователем tg_ID:{tg_id}')
+    result = await session.execute(select(User).where(User.tg_user_id == tg_id))
+    user = result.scalar_one_or_none()
+    if user is None:
+        raise ValueError(f'Пользователь не найден при переходе в урок 7, tg_id: {tg_id}')
+    lesson_deny = await lesson_access(user=user, session=session, lesson_key='lesson_7')
+    if not lesson_deny:
+        await callback.answer('Доступ закрыт!😢\n\nТребуется успешное прохождение урока №6!', show_alert=True)
+    else:
+        lesson = LessonResult(
+            user_id=user.id,
+            lesson_key='lesson_7',
+        )
+        session.add(lesson)
+        await session.commit()
+        await session.refresh(lesson)
+        logger.info(f'Запущен шестой урок пользователем tg_ID:{tg_id}. ID урока в БД - {lesson.id}')
+        await callback.answer()
+        async with ChatActionSender.upload_video(
+                bot=dialog_manager.middleware_data['bot'],
+                chat_id=callback.message.chat.id,
+                interval=4.0,
+                initial_sleep=0.0,
+        ):
+            await dialog_manager.start(HpSeventhLessonDialog.vebinar_1, mode=StartMode.NORMAL, data={'lesson_id': lesson.id})
+
+async def exam_lesson_start(callback: CallbackQuery, button: Button, dialog_manager: DialogManager):
+    session: AsyncSession = dialog_manager.middleware_data['session']
+    tg_id = dialog_manager.event.from_user.id
+    logger.info(f'Запущен экзамен пользователем tg_ID:{tg_id}')
+    result = await session.execute(select(User).where(User.tg_user_id == tg_id))
+    user = result.scalar_one_or_none()
+    if user is None:
+        raise ValueError(f'Пользователь не найден при переходе в экзамен, tg_id: {tg_id}')
+    lesson_deny = await lesson_access(user=user, session=session, lesson_key='exam')
+    if not lesson_deny:
+        await callback.answer('Доступ закрыт!😢\n\nТребуется успешное прохождение урока №7!', show_alert=True)
+    else:
+        lesson = LessonResult(
+            user_id=user.id,
+            lesson_key='exam',
+        )
+        session.add(lesson)
+        await session.commit()
+        await session.refresh(lesson)
+        logger.info(f'Запущен экзамен пользователем tg_ID:{tg_id}. ID урока в БД - {lesson.id}')
+        await callback.answer()
+        async with ChatActionSender.upload_video(
+                bot=dialog_manager.middleware_data['bot'],
+                chat_id=callback.message.chat.id,
+                interval=4.0,
+                initial_sleep=0.0,
+        ):
+            await dialog_manager.start(HpExamLessonDialog.vebinar_1, mode=StartMode.NORMAL, data={'lesson_id': lesson.id})
 
 # Стартовое меню бота
 main_window = Window(
@@ -222,26 +365,26 @@ Button(Format("{lessons_text[lesson_1]}"),
                id="3",
                on_click=third_lesson_start,
                when="user_authorized"),
-        # Button(Format("{lessons_text[lesson_4]}"),
-        #                id="4",
-        #                on_click=fourth_lesson_start,
-        #                when="user_authorized"),
-        # Button(Format("{lessons_text[lesson_5]}"),
-        #                id='5',
-        #                on_click=fifth_lesson_start,
-        #                when="user_authorized"),
-        # Button(Format("{lessons_text[lesson_6]}"),
-        #                id="6",
-        #                on_click=sixth_lesson_start,
-        #                when="user_authorized"),
-        # Button(Format("{lessons_text[lesson_7]}"),
-        #                id="7",
-        #                on_click=seventh_lesson_start,
-        #                when="user_authorized"),
-        # Button(Format("{lessons_text[exam]}"),
-        #                id="exam",
-        #                on_click=exam_lesson_start,
-        #                when="user_authorized"),
+        Button(Format("{lessons_text[lesson_4]}"),
+                       id="4",
+                       on_click=fourth_lesson_start,
+                       when="user_authorized"),
+        Button(Format("{lessons_text[lesson_5]}"),
+                       id='5',
+                       on_click=fifth_lesson_start,
+                       when="user_authorized"),
+        Button(Format("{lessons_text[lesson_6]}"),
+                       id="6",
+                       on_click=sixth_lesson_start,
+                       when="user_authorized"),
+        Button(Format("{lessons_text[lesson_7]}"),
+                       id="7",
+                       on_click=seventh_lesson_start,
+                       when="user_authorized"),
+        Button(Format("{lessons_text[exam]}"),
+                       id="exam",
+                       on_click=exam_lesson_start,
+                       when="user_authorized"),
         Button(Format("📖 Статистика обучения"),
                id="8",
                on_click=process_education,
