@@ -3,7 +3,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from db import async_session_factory
 from db.models import User, HpLessonResult as LessonResult
-from questions_lexicon import lessons
+from service.questions_lexicon import lessons
 
 def pad_right(s: str, width: int) -> str:
     # обычные пробелы иногда “съедаются”/выглядят странно в кнопках,
