@@ -148,9 +148,9 @@ def checking_result(answers: dict, total_questions: int) -> dict:
 async def get_lessons_buttons(user: User, session: AsyncSession) -> dict:
     lessons_access: dict[str, str|bool] = {}
 
-    compleat_icon = '✅'
-    ready_icon = '▶️'
-    close_icon = '🔒'
+    compleat_icon = '✅ '
+    ready_icon = '▶️ '
+    close_icon = '🔒 '
 
     if user is None or user.id is None:
         return {
