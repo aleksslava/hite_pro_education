@@ -350,5 +350,5 @@ result = Window(
     getter=result_getter,
 )
 
-keyway_third_lesson_dialog = Dialog(vebinar_1, first_question, second_question, third_question, fourth_question,
+hp_third_lesson_dialog = Dialog(vebinar_1, first_question, second_question, third_question, fourth_question,
                                     fifth_question, confirm_answers, result)

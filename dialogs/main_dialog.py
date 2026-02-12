@@ -10,7 +10,7 @@ from aiogram_dialog.widgets.text import Const, Format
 from aiogram_dialog import Dialog, Window, DialogManager, StartMode, ShowMode
 
 from amo_api.amo_service import processing_contact, processing_lead
-from fsm_forms.fsm_models import MainDialog, HpFirstLessonDialog, HpSecondLessonDialog, KeywayThirdLessonDialog, \
+from fsm_forms.fsm_models import MainDialog, HpFirstLessonDialog, HpSecondLessonDialog, HpThirdLessonDialog, \
     AdminDialog
 from aiogram.types import ReplyKeyboardMarkup, KeyboardButton
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -199,7 +199,7 @@ async def third_lesson_start(callback: CallbackQuery, button: Button, dialog_man
                 interval=4.0,
                 initial_sleep=0.0,
         ):
-            await dialog_manager.start(KeywayThirdLessonDialog.vebinar_1, mode=StartMode.NORMAL, data={'lesson_id': lesson.id})
+            await dialog_manager.start(HpThirdLessonDialog.vebinar_1, mode=StartMode.NORMAL, data={'lesson_id': lesson.id})
 
 
 

@@ -10,9 +10,9 @@ from amo_api.amo_api import AmoCRMWrapper
 from dialogs.admin_dialog import admin_getter, admin_dialog
 from dialogs.error_dialog import errors_router
 from dialogs.main_dialog import main_menu_dialog
-from dialogs.hp_first_lesson_dialog import keyway_first_lesson_dialog
-from dialogs.hp_second_lesson_dialog import keyway_second_lesson_dialog
-from dialogs.hp_third_lesson_dialog import keyway_third_lesson_dialog
+from dialogs.hp_first_lesson_dialog import hp_first_lesson_dialog
+from dialogs.hp_second_lesson_dialog import hp_second_lesson_dialog
+from dialogs.hp_third_lesson_dialog import hp_third_lesson_dialog
 from handlers.start_handler import main_menu_router
 from config.config import load_config
 from aiogram.enums.parse_mode import ParseMode
@@ -59,8 +59,8 @@ dp.errors.middleware(DbSessionMiddleware())
 dp.errors.middleware(AmoApiMiddleware(amo_api, amo_fields=config.amo_fields, admin_id=config.admin))
 
 dp.include_router(main_menu_router)
-dp.include_routers(main_menu_dialog, keyway_first_lesson_dialog, keyway_second_lesson_dialog,
-                   keyway_third_lesson_dialog, admin_dialog, errors_router)
+dp.include_routers(main_menu_dialog, hp_first_lesson_dialog, hp_second_lesson_dialog,
+                   hp_third_lesson_dialog, admin_dialog, errors_router)
 
 setup_dialogs(dp)
 

@@ -412,6 +412,6 @@ result = Window(
     getter=result_getter
 )
 
-keyway_second_lesson_dialog = Dialog(vebinar_1, first_question, second_question,
+hp_second_lesson_dialog = Dialog(vebinar_1, first_question, second_question,
                                     third_question, fourth_question, fifth_question, sixth_question, seventh_question,
                                      eighth_question, confirm_answers, result)
