@@ -460,7 +460,7 @@ class AmoCRMWrapper:
     def send_lead_to_amo(self, pipeline_id: int, status_id: int, contact_id: int):
         url = f'/api/v4/leads'
         data = [{
-            'name': 'Автосделка из бота keyway_education',
+            'name': 'Автосделка из бота HiTE_PRO_Education',
             'pipeline_id': int(pipeline_id),
             'created_by': 0,
             'status_id': int(status_id),
@@ -486,7 +486,6 @@ class AmoCRMWrapper:
             'pipeline_id': int(pipeline_id),
             'updated_by': 0,
             'status_id': int(status_id),
-            'responsible_user_id': 453498,
 
         }
         response = self._base_request(type='patch', endpoint=url, data=data)
