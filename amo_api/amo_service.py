@@ -11,12 +11,14 @@ def processing_contact(amo_api: AmoCRMWrapper,
         first_name = contact.get("first_name", "")
         last_name = contact.get("last_name", "")
         amo_id = contact.get('id', '')
+        tg_id = [field for field in contact.get('custom_fields_values') if field.get('field_id') == 1097296]
 
         return {
             "first_name": first_name,
             "last_name": last_name,
             "phone_number": contact_phone_number,
             "amo_contact_id": amo_id,
+            'tg_id': tg_id
         }
     else:
         return None

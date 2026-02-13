@@ -410,6 +410,7 @@ async def on_contact(message: Message, _, dialog_manager):
     status_fields: dict = dialog_manager.middleware_data['amo_fields'].get('statuses')
     pipelines: dict = dialog_manager.middleware_data['amo_fields'].get('pipelines')
     tg_id = dialog_manager.event.from_user.id
+    tg_field_id = dialog_manager.middleware_data['amo_fields'].get('fields_id').get('tg_id')
     phone_number = message.contact.phone_number
     logger.info(f'Пользователь tg_id: {tg_id} поделился номером телефона: {phone_number}')
     result = await session.execute(select(User).where(User.tg_user_id == tg_id))
@@ -418,6 +419,8 @@ async def on_contact(message: Message, _, dialog_manager):
     contact_data = processing_contact(amo_api=amo_api, contact_phone_number=str(phone_number))
 
     if contact_data: # Данные контакта найдены в амосрм
+        if not contact_data['tg_id']: # Если tg_id нет в контакте, то добавляем
+
         user.first_name = contact_data["first_name"]
         user.last_name = contact_data["last_name"]
         user.amo_contact_id = contact_data["amo_contact_id"]
@@ -441,7 +444,8 @@ async def on_contact(message: Message, _, dialog_manager):
         logger.info(f'В амо не найден контакт для пользователя tg_id: {tg_id}, телефон: {phone_number}')
         new_contact_id = amo_api.create_new_contact(first_name=dialog_manager.event.from_user.first_name,
                                                     last_name=dialog_manager.event.from_user.last_name,
-                                                    phone=message.contact.phone_number)
+                                                    phone=message.contact.phone_number,
+                                                    tg_id_field=tg_field_id, tg_id=tg_id,)
         new_lead_id = amo_api.send_lead_to_amo(pipeline_id=pipelines.get('hite_pro_education'),
                                                status_id=status_fields.get('admitted_to_training'),
                                                contact_id=new_contact_id,

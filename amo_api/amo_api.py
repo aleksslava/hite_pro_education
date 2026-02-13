@@ -482,7 +482,7 @@ class AmoCRMWrapper:
     def push_lead_to_status(self, lead_id: str, pipeline_id: int, status_id: int):
         url = f'/api/v4/leads/{int(lead_id)}'
         data = {
-            'name': 'Автосделка из бота keyway_education',
+            'name': 'Автосделка из бота hite_pro_education',
             'pipeline_id': int(pipeline_id),
             'updated_by': 0,
             'status_id': int(status_id),
@@ -587,7 +587,7 @@ class AmoCRMWrapper:
         logger.info(f'Статус код запроса записей покупателя: {response.status_code}')
         return response.json()
 
-    def create_new_contact(self, first_name: str, last_name: str, phone: str):
+    def create_new_contact(self, first_name: str, last_name: str, phone: str, tg_id_field: int, tg_id: str):
         url = '/api/v4/contacts'
         data = [{
             'first_name': first_name,
@@ -599,6 +599,12 @@ class AmoCRMWrapper:
                      {'enum_code': 'WORK',
                       "value": str(phone)
                       },]
+                 },
+                {"field_id": tg_id_field,
+                 "values": [
+                     {
+                      "value": str(phone)
+                      }, ]
                  }
             ],
         }]

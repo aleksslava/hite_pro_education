@@ -248,7 +248,7 @@ fifth_question = Window(
             Radio(
                 checked_text=Format('🟢 Вариант {item[1]}'),
                 unchecked_text=Format('⚪ Вариант {item[1]}'),
-                id='fourth_question_answers_checked',
+                id='fifth_question_answers_checked',
                 item_id_getter=operator.itemgetter(1),
                 items="question_answers",
                 on_state_changed=radio_question_answers_checked,
@@ -268,7 +268,7 @@ sixth_question = Window(
             Multiselect(
                 checked_text=Format('✅ {item[0]}'),
                 unchecked_text=Format('️◻️ {item[0]}'),
-                id='fifth_question_answers_checked',
+                id='sixth_question_answers_checked',
                 item_id_getter=operator.itemgetter(1),
                 items="question_answers",
                 on_state_changed=multiselect_question_answers_checked,
