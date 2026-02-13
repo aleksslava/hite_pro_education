@@ -182,10 +182,6 @@ first_question = Window(
 
 second_question = Window(
     Format(text="<b>Вопрос #{quest_number} из {count_quest}:\n\n{title}</b>\n{radio}"),
-    StaticMedia(
-        path=BASE_DIR / "media" / "photo" / "lesson_2" / "question_2.png",
-        type=ContentType.PHOTO,
-    ),
     Group(
         Column(
             Radio(
@@ -267,10 +263,6 @@ fifth_question = Window(
 
 sixth_question = Window(
     Format(text="<b>Вопрос #{quest_number} из {count_quest}:\n\n{title}</b>\n{radio}"),
-    StaticMedia(
-        path=BASE_DIR / "media" / "photo"/ "lesson_2" / "question_6.png",
-        type=ContentType.PHOTO,
-    ),
     Group(
         Column(
             Multiselect(
@@ -291,10 +283,6 @@ sixth_question = Window(
 
 seventh_question = Window(
     Format(text="<b>Вопрос #{quest_number} из {count_quest}:\n\n{title}</b>\n{radio}"),
-    StaticMedia(
-        path=BASE_DIR / "media" / "photo"/ "lesson_2" / "question_7.png",
-        type=ContentType.PHOTO,
-    ),
     Group(
         Column(
             Radio(

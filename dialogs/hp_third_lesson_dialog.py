@@ -242,10 +242,6 @@ fourth_question = Window(
 
 fifth_question = Window(
     Format(text="<b>Вопрос #{quest_number} из {count_quest}:\n\n{title}</b>\n{multi}"),
-    StaticMedia(
-        path=BASE_DIR / "media" / "photo" / "lesson_3" / "question_5.png",
-        type=ContentType.PHOTO,
-    ),
     Group(
         Column(
             Radio(
