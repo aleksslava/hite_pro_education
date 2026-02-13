@@ -156,7 +156,7 @@ async def on_webapp_data(message: Message, _, dialog_manager: DialogManager):
     if not isinstance(payload, dict):
         await message.answer("Некорректный формат данных из WebApp. Ожидался JSON-объект.")
         return
-
+    await message.answer(text=str(payload))
     parsed_payload = _parse_exam_payload(payload)
     dialog_manager.dialog_data["exam_payload_raw"] = raw_data
     dialog_manager.dialog_data["exam_payload"] = parsed_payload
