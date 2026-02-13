@@ -1,6 +1,7 @@
-import datetime
+﻿import datetime
 import json
 import logging
+from ast import literal_eval
 
 from aiogram.enums import ContentType
 from aiogram.types import (
@@ -22,6 +23,7 @@ from sqlalchemy.orm import selectinload
 from amo_api.amo_api import AmoCRMWrapper
 from db import HpLessonResult as LessonResult
 from fsm_forms.fsm_models import HpExamLessonDialog
+from service.questions_lexicon import exam_lesson
 
 logger = logging.getLogger(__name__)
 
@@ -52,53 +54,54 @@ def _safe_bool(value, default: bool = False) -> bool:
     return default
 
 
-def _parse_exam_payload(payload: dict) -> dict:
-    total_questions = _safe_int(
-        payload.get("total_questions")
-        or payload.get("totalQuestions")
-        or payload.get("questions_count")
-        or payload.get("questionsCount")
+def _normalize_option_key(value: str) -> str:
+    if not isinstance(value, str):
+        return str(value)
+    return "".join(ch.lower() for ch in value if ch.isascii() and (ch.isalnum() or ch == "-"))
+
+
+def _evaluate_exam_answers(user_answers: dict) -> dict:
+    total_items = 0
+    correct_items = 0
+    per_question_stats: list[str] = []
+
+    for q_key, expected_map in exam_lesson.items():
+        incoming_map = user_answers.get(q_key, {})
+        if not isinstance(incoming_map, dict):
+            incoming_map = {}
+
+        normalized_incoming = {
+            _normalize_option_key(raw_key): _safe_int(raw_value, default=-999999)
+            for raw_key, raw_value in incoming_map.items()
+        }
+
+        question_total = 0
+        question_correct = 0
+        for expected_key, expected_value in expected_map.items():
+            question_total += 1
+            total_items += 1
+            actual_value = normalized_incoming.get(_normalize_option_key(expected_key))
+            is_correct = actual_value == _safe_int(expected_value)
+            if is_correct:
+                question_correct += 1
+                correct_items += 1
+
+        per_question_stats.append(f"{q_key}: {question_correct}/{question_total}")
+
+    score = _safe_int(round((correct_items / total_items) * 100) if total_items else 0)
+    passed = score >= 80
+    result_text = (
+        f"Верных ответов: {correct_items}/{total_items} ({score}%).\n"
+        f"По блокам: {', '.join(per_question_stats)}.\n"
+        f"{'Экзамен пройден.' if passed else 'Экзамен не пройден.'}"
     )
-    correct_answers = _safe_int(
-        payload.get("correct_answers")
-        or payload.get("correctAnswers")
-        or payload.get("correct")
-    )
-
-    score = payload.get("score")
-    if score is None:
-        score = payload.get("percent")
-    if score is None:
-        score = payload.get("percentage")
-    if score is None and total_questions > 0:
-        score = round((correct_answers / total_questions) * 100)
-    score = _safe_int(score, 0)
-
-    passed = payload.get("passed")
-    if passed is None:
-        passed = payload.get("isPassed")
-    if passed is None:
-        passed = payload.get("compleat")
-    if passed is None:
-        passed = score >= 80
-    passed = _safe_bool(passed, default=score >= 80)
-
-    text_result = payload.get("result_text") or payload.get("resultText")
-    if text_result is None:
-        if total_questions > 0:
-            text_result = (
-                f"Верных ответов: {correct_answers}/{total_questions} ({score}%). "
-                f"{'Экзамен пройден.' if passed else 'Экзамен не пройден.'}"
-            )
-        else:
-            text_result = f"Результат: {score}%. {'Экзамен пройден.' if passed else 'Экзамен не пройден.'}"
-
     return {
         "score": score,
         "passed": passed,
-        "total_questions": total_questions,
-        "correct_answers": correct_answers,
-        "result_text": str(text_result),
+        "total_questions": len(exam_lesson),
+        "total_items": total_items,
+        "correct_answers": correct_items,
+        "result_text": result_text,
     }
 
 
@@ -143,21 +146,41 @@ async def exam_webapp_getter(dialog_manager: DialogManager, **kwargs):
 async def on_webapp_data(message: Message, _, dialog_manager: DialogManager):
     raw_data = (message.web_app_data.data or "").strip()
     if not raw_data:
-        await message.answer("Не удалось получить данные из WebApp. Пройдите экзамен еще раз.")
+        await message.answer(
+            "Не удалось получить данные из WebApp. Пройдите экзамен еще раз.",
+            reply_markup=ReplyKeyboardRemove(),
+        )
         return
 
     try:
         payload = json.loads(raw_data)
     except json.JSONDecodeError:
-        logger.exception("Invalid WEB_APP_DATA payload: %s", raw_data)
-        await message.answer("Данные пришли в неверном формате. Попробуйте пройти экзамен еще раз.")
-        return
+        try:
+            payload = literal_eval(raw_data)
+        except (ValueError, SyntaxError):
+            logger.exception("Invalid WEB_APP_DATA payload: %s", raw_data)
+            await message.answer(
+                "Данные пришли в неверном формате. Попробуйте пройти экзамен еще раз.",
+                reply_markup=ReplyKeyboardRemove(),
+            )
+            return
 
     if not isinstance(payload, dict):
-        await message.answer("Некорректный формат данных из WebApp. Ожидался JSON-объект.")
+        await message.answer(
+            "Некорректный формат данных из WebApp. Ожидался JSON-объект.",
+            reply_markup=ReplyKeyboardRemove(),
+        )
         return
-    await message.answer(text=str(payload))
-    parsed_payload = _parse_exam_payload(payload)
+
+    answers = payload.get("answers")
+    if not isinstance(answers, dict):
+        await message.answer(
+            "В данных из WebApp отсутствует поле 'answers' или оно некорректно.",
+            reply_markup=ReplyKeyboardRemove(),
+        )
+        return
+
+    parsed_payload = _evaluate_exam_answers(answers)
     dialog_manager.dialog_data["exam_payload_raw"] = raw_data
     dialog_manager.dialog_data["exam_payload"] = parsed_payload
 
@@ -175,7 +198,7 @@ async def result_getter(dialog_manager: DialogManager, **kwargs):
 
     payload = dialog_manager.dialog_data.get("exam_payload", {})
     score = _safe_int(payload.get("score"), 0)
-    passed = bool(payload.get("passed", False))
+    passed = _safe_bool(payload.get("passed"), default=False)
     result_text = str(payload.get("result_text", "Результат экзамена получен."))
 
     logger.info(
@@ -195,7 +218,6 @@ async def result_getter(dialog_manager: DialogManager, **kwargs):
         if lesson is not None:
             lesson.score = score
             lesson.compleat = passed
-            lesson.result = result_text[:128]
             lesson.completed_at = datetime.datetime.utcnow()
 
             user = lesson.user
@@ -218,7 +240,7 @@ async def result_getter(dialog_manager: DialogManager, **kwargs):
     return {
         "result_text": result_text,
         "score": score,
-        "passed_text": "Экзамен пройден" if passed else "Экзамен не пройден",
+        "passed_text": "✅ Экзамен пройден" if passed else "❌ Экзамен не пройден",
     }
 
 

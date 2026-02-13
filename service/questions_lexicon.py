@@ -507,6 +507,50 @@ questions_7 = {'HpSeventhLessonDialog:first_question': {'title': 'Как в Ха
                                                              False)],
                                                 'key': 'q11'}}
 
+exam_lesson = {
+    'q1': {
+        'LE-1': 1,
+        'LE-2': 2,
+        'Relay-4M': 1,
+        'Relay-F1': 4,
+        'Relay-2': 5,
+        'Relay-F2': 6,
+        'Gateway': 7},
+    'q2': {
+        'SN-R1': 1,
+        'LE-1': 2,
+        'SN-R2': 3,
+        'LE-2': 4,
+        'Relay-4M': 5,
+        'Gateway': 6,
+        'Socket': 7,
+        'Relay-DRIVE (12 В)': 8,
+        'Relay-DRIVE (220 В)': 6,
+        'Relay-F2': 0},
+    'q3': {
+        'LE-1': 2,
+        'LE-2': 4,
+        'Relay-F1': 7,
+        'Relay-F2': 0,
+        'Relay-DRIVE (220 В)': 8,
+        'Relay-DRIVE (12 В)': 6,
+        'Relay-4M': 3,
+        'Relay-1': 0,
+        'UNI': 0,
+        'Gateway': 1,
+        'Socket': 3},
+    'q4': {
+        'LE-A1': 1,
+        'LE-A2': 5,
+        'SN-R1': 4,
+        'SN-R2': 7,
+        'DST-1': 0,
+        'Gateway': 0,
+        'Socket': 3,
+        'Relay-1': 2,
+        'Relay-2': 1,
+        'Relay-4M': 4}
+}
 
 explan = {
     'radio': '(Только один правильный ответ)',
