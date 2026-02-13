@@ -181,12 +181,12 @@ first_question = Window(
 
 
 second_question = Window(
-    Format(text="<b>Вопрос #{quest_number}: из {count_quest}\n\n{title}</b>\n{radio}\n\n{text_answers}"),
+    Format(text="<b>Вопрос #{quest_number}: из {count_quest}\n\n{title}</b>\n{radio}"),
     Group(
         Column(
             Radio(
-                checked_text=Format('🟢 Вариант {item[1]}'),
-                unchecked_text=Format('⚪ Вариант {item[1]}'),
+                checked_text=Format('🟢 {item[0]}'),
+                unchecked_text=Format('⚪ {item[0]}'),
                 id='second_question_answers_checked',
                 item_id_getter=operator.itemgetter(1),
                 items="question_answers",
@@ -207,7 +207,7 @@ third_question = Window(
             Radio(
                 checked_text=Format('🟢 Вариант {item[1]}'),
                 unchecked_text=Format('⚪ Вариант {item[1]}'),
-                id='second_question_answers_checked',
+                id='third_question_answers_checked',
                 item_id_getter=operator.itemgetter(1),
                 items="question_answers",
                 on_state_changed=radio_question_answers_checked,
@@ -242,13 +242,13 @@ fourth_question = Window(
     )
 
 fifth_question = Window(
-    Format(text="<b>Вопрос #{quest_number} из {count_quest}:\n\n{title}</b>\n{multi}"),
+    Format(text="<b>Вопрос #{quest_number} из {count_quest}:\n\n{title}</b>\n{radio}\n\n{text_answers}"),
     Group(
         Column(
             Radio(
                 checked_text=Format('🟢 Вариант {item[1]}'),
                 unchecked_text=Format('⚪ Вариант {item[1]}'),
-                id='fourth_question_answers_checked',
+                id='fifth_question_answers_checked',
                 item_id_getter=operator.itemgetter(1),
                 items="question_answers",
                 on_state_changed=radio_question_answers_checked,
@@ -262,12 +262,12 @@ fifth_question = Window(
     )
 
 sixth_question = Window(
-    Format(text="<b>Вопрос #{quest_number} из {count_quest}:\n\n{title}</b>\n{multi}"),
+    Format(text="<b>Вопрос #{quest_number} из {count_quest}:\n\n{title}</b>\n{radio}"),
     Group(
         Column(
             Radio(
-                checked_text=Format('🟢 Вариант {item[1]}'),
-                unchecked_text=Format('⚪ Вариант {item[1]}'),
+                checked_text=Format('🟢 {item[0]}'),
+                unchecked_text=Format('⚪ {item[0]}'),
                 id='fourth_question_answers_checked',
                 item_id_getter=operator.itemgetter(1),
                 items="question_answers",
@@ -282,7 +282,7 @@ sixth_question = Window(
     )
 
 seventh_question = Window(
-    Format(text="<b>Вопрос #{quest_number} из {count_quest}:\n\n{title}</b>\n{multi}"),
+    Format(text="<b>Вопрос #{quest_number} из {count_quest}:\n\n{title}</b>\n{radio}\n\n{text_answers}"),
     Group(
         Column(
             Radio(
@@ -302,7 +302,7 @@ seventh_question = Window(
     )
 
 eighth_question = Window(
-    Format(text="<b>Вопрос #{quest_number} из {count_quest}:\n\n{title}</b>\n{multi}"),
+    Format(text="<b>Вопрос #{quest_number} из {count_quest}:\n\n{title}</b>\n{radio}\n\n{text_answers}"),
     Group(
         Column(
             Radio(
@@ -322,7 +322,7 @@ eighth_question = Window(
     )
 
 ninth_question = Window(
-    Format(text="<b>Вопрос #{quest_number} из {count_quest}:\n\n{title}</b>\n{multi}"),
+    Format(text="<b>Вопрос #{quest_number} из {count_quest}:\n\n{title}</b>\n{radio}\n\n{text_answers}"),
     Group(
         Column(
             Radio(
@@ -342,7 +342,7 @@ ninth_question = Window(
     )
 
 tenth_question = Window(
-    Format(text="<b>Вопрос #{quest_number} из {count_quest}:\n\n{title}</b>\n{multi}"),
+    Format(text="<b>Вопрос #{quest_number} из {count_quest}:\n\n{title}</b>\n{radio}\n\n{text_answers}"),
     Group(
         Column(
             Radio(
@@ -362,13 +362,13 @@ tenth_question = Window(
     )
 
 eleventh_question = Window(
-    Format(text="<b>Вопрос #{quest_number} из {count_quest}:\n\n{title}</b>\n{multi}"),
+    Format(text="<b>Вопрос #{quest_number} из {count_quest}:\n\n{title}</b>\n{radio}\n\n{text_answers}"),
     Group(
         Column(
             Radio(
                 checked_text=Format('🟢 Вариант {item[1]}'),
                 unchecked_text=Format('⚪ Вариант {item[1]}'),
-                id='fourth_question_answers_checked',
+                id='eleventh_question_answers_checked',
                 item_id_getter=operator.itemgetter(1),
                 items="question_answers",
                 on_state_changed=radio_question_answers_checked,
@@ -456,11 +456,7 @@ async def result_getter(dialog_manager: DialogManager, **kwargs):
 result = Window(
     Const(text='Ваши результаты прохождения седьмого урока:'),
     Format(text="{result}"),
-    Const(text=edu_compleat_text, when='compleat_edu'),
     Column(
-        Url(Const('🔵 Сообщить в Telegram'), url=Format("{url_tg}")),
-        Url(Const('🟢 Сообщить в WhatsApp'), url=Format("{url_wa}")),
-        Url(Const('🟣 Сообщить в Max'), url=Format("{url_max}")),
         Cancel(Const('В главное меню'), id='cancel', show_mode=ShowMode.SEND),
     ),
     state=HpSeventhLessonDialog.result_seventh_lesson,
@@ -468,4 +464,5 @@ result = Window(
 )
 
 hp_seventh_lesson_dialog = Dialog(vebinar_1, first_question, second_question, third_question, fourth_question,
-                                    fifth_question, sixth_question, confirm_answers, result)
+                                    fifth_question, sixth_question, seventh_question, eighth_question, ninth_question,
+                                  tenth_question, eleventh_question, confirm_answers, result)

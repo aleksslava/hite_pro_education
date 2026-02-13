@@ -222,7 +222,7 @@ third_question = Window(
 
 
 fourth_question = Window(
-    Format(text="<b>Вопрос #{quest_number} из {count_quest}:\n\n{title}</b>\n{radio}\n\n{text_answers}"),
+    Format(text="<b>Вопрос #{quest_number} из {count_quest}:\n\n{title}</b>\n{multi}\n\n{text_answers}"),
     Group(
         Column(
             Multiselect(
