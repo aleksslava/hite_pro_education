@@ -48,12 +48,6 @@ def _safe_bool(value, default: bool = False) -> bool:
     return default
 
 
-def _normalize_option_key(value: str) -> str:
-    if not isinstance(value, str):
-        return str(value)
-    return "".join(ch.lower() for ch in value if ch.isascii() and (ch.isalnum() or ch == "-"))
-
-
 def _evaluate_exam_answers(user_answers: dict) -> dict:
     total_items = 0
     correct_items = 0
@@ -63,22 +57,25 @@ def _evaluate_exam_answers(user_answers: dict) -> dict:
         incoming_map = user_answers.get(q_key, {})
         if not isinstance(incoming_map, dict):
             incoming_map = {}
-
-        normalized_incoming = {
-            _normalize_option_key(raw_key): _safe_int(raw_value, default=-999999)
-            for raw_key, raw_value in incoming_map.items()
-        }
+        expected_keys = set(expected_map.keys())
+        incoming_keys = set(incoming_map.keys())
 
         question_total = 0
         question_correct = 0
+
         for expected_key, expected_value in expected_map.items():
             question_total += 1
             total_items += 1
-            actual_value = normalized_incoming.get(_normalize_option_key(expected_key))
-            is_correct = actual_value == _safe_int(expected_value)
+            actual_value = incoming_map.get(expected_key)
+            is_correct = _safe_int(actual_value, default=-999999) == _safe_int(expected_value)
             if is_correct:
                 question_correct += 1
                 correct_items += 1
+
+        extra_keys_count = len(incoming_keys - expected_keys)
+        if extra_keys_count > 0:
+            question_total += extra_keys_count
+            total_items += extra_keys_count
 
         per_question_stats.append(f"{q_key}: {question_correct}/{question_total}")
 

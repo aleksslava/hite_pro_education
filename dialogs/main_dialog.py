@@ -360,18 +360,13 @@ async def exam_lesson_start(callback: CallbackQuery, button: Button, dialog_mana
                 "<b>Экзамен HiTE PRO</b>\n\nНажмите кнопку ниже, чтобы открыть экзамен.",
                 reply_markup=kb,
             )
-        async with ChatActionSender.upload_video(
-                bot=dialog_manager.middleware_data['bot'],
-                chat_id=callback.message.chat.id,
-                interval=4.0,
-                initial_sleep=0.0,
-        ):
-            await dialog_manager.start(
-                HpExamLessonDialog.vebinar_1,
-                mode=StartMode.NORMAL,
-                data={'lesson_id': lesson.id},
-                show_mode=ShowMode.NO_UPDATE,
-            )
+
+        await dialog_manager.start(
+            HpExamLessonDialog.vebinar_1,
+            mode=StartMode.NORMAL,
+            data={'lesson_id': lesson.id},
+            show_mode=ShowMode.NO_UPDATE,
+        )
 
 # Стартовое меню бота
 main_window = Window(
