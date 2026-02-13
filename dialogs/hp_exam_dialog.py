@@ -5,12 +5,8 @@ from ast import literal_eval
 
 from aiogram.enums import ContentType
 from aiogram.types import (
-    CallbackQuery,
-    KeyboardButton,
     Message,
-    ReplyKeyboardMarkup,
     ReplyKeyboardRemove,
-    WebAppInfo,
 )
 from aiogram_dialog import Dialog, DialogManager, ShowMode, Window
 from aiogram_dialog.widgets.input import MessageInput
@@ -26,8 +22,6 @@ from fsm_forms.fsm_models import HpExamLessonDialog
 from service.questions_lexicon import exam_lesson
 
 logger = logging.getLogger(__name__)
-
-WEBAPP_URL = "https://aleksslava.github.io/exam_edu.github.io/"
 
 
 def _safe_int(value, default: int = 0) -> int:
@@ -106,40 +100,6 @@ def _evaluate_exam_answers(user_answers: dict) -> dict:
 
 
 async def exam_webapp_getter(dialog_manager: DialogManager, **kwargs):
-    if dialog_manager.dialog_data.get("webapp_kb_sent"):
-        return {}
-
-    keyboard = ReplyKeyboardMarkup(
-        keyboard=[
-            [
-                KeyboardButton(
-                    text="Открыть экзамен",
-                    web_app=WebAppInfo(url=WEBAPP_URL),
-                )
-            ]
-        ],
-        resize_keyboard=True,
-        one_time_keyboard=False,
-    )
-
-    event = dialog_manager.event
-    sent = False
-    if isinstance(event, CallbackQuery) and event.message is not None:
-        await event.message.answer(
-            "Нажмите кнопку ниже, чтобы открыть WebApp с экзаменом.",
-            reply_markup=keyboard,
-        )
-        sent = True
-    elif isinstance(event, Message):
-        await event.answer(
-            "Нажмите кнопку ниже, чтобы открыть WebApp с экзаменом.",
-            reply_markup=keyboard,
-        )
-        sent = True
-
-    if sent:
-        dialog_manager.dialog_data["webapp_kb_sent"] = True
-
     return {}
 
 
@@ -253,7 +213,6 @@ vebinar_1 = Window(
         )
     ),
     MessageInput(on_webapp_data, ContentType.WEB_APP_DATA),
-    Cancel(Const("Назад"), id="go_cancel_dialog"),
     state=HpExamLessonDialog.vebinar_1,
     getter=exam_webapp_getter,
 )

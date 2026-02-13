@@ -13,7 +13,7 @@ from amo_api.amo_service import processing_contact, processing_lead
 from fsm_forms.fsm_models import MainDialog, HpFirstLessonDialog, HpSecondLessonDialog, HpThirdLessonDialog, \
     AdminDialog, HpFourthLessonDialog, HpFifthLessonDialog, HpSixthLessonDialog, HpSeventhLessonDialog, \
     HpExamLessonDialog
-from aiogram.types import ReplyKeyboardMarkup, KeyboardButton
+from aiogram.types import ReplyKeyboardMarkup, KeyboardButton, WebAppInfo
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from sqlalchemy.orm import selectinload
@@ -25,6 +25,7 @@ from service.questions_lexicon import welcome_message
 from service.service import get_lessons_buttons, lesson_access
 
 logger = logging.getLogger(__name__)
+EXAM_WEBAPP_URL = "https://aleksslava.github.io/exam_edu.github.io/"
 
 
 def _resolve_event_user(dialog_manager: DialogManager):
@@ -339,13 +340,38 @@ async def exam_lesson_start(callback: CallbackQuery, button: Button, dialog_mana
         await session.refresh(lesson)
         logger.info(f'Запущен экзамен пользователем tg_ID:{tg_id}. ID урока в БД - {lesson.id}')
         await callback.answer()
+        kb = ReplyKeyboardMarkup(
+            keyboard=[[
+                KeyboardButton(
+                    text="Открыть экзамен",
+                    web_app=WebAppInfo(url=EXAM_WEBAPP_URL),
+                )
+            ]],
+            resize_keyboard=True,
+            one_time_keyboard=False,
+        )
+        if callback.message is not None:
+            try:
+                await callback.message.delete()
+            except Exception:
+                logger.exception("Не удалось удалить предыдущее сообщение перед стартом экзамена")
+
+            await callback.message.answer(
+                "<b>Экзамен HiTE PRO</b>\n\nНажмите кнопку ниже, чтобы открыть экзамен.",
+                reply_markup=kb,
+            )
         async with ChatActionSender.upload_video(
                 bot=dialog_manager.middleware_data['bot'],
                 chat_id=callback.message.chat.id,
                 interval=4.0,
                 initial_sleep=0.0,
         ):
-            await dialog_manager.start(HpExamLessonDialog.vebinar_1, mode=StartMode.NORMAL, data={'lesson_id': lesson.id})
+            await dialog_manager.start(
+                HpExamLessonDialog.vebinar_1,
+                mode=StartMode.NORMAL,
+                data={'lesson_id': lesson.id},
+                show_mode=ShowMode.NO_UPDATE,
+            )
 
 # Стартовое меню бота
 main_window = Window(
