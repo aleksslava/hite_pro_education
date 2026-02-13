@@ -246,6 +246,10 @@ fourth_question = Window(
 
 fifth_question = Window(
     Format(text="<b>Вопрос #{quest_number} из {count_quest}:\n\n{title}</b>\n{radio}"),
+    StaticMedia(
+        path=BASE_DIR / "media" / "photo" / "lesson3_q4.png",
+        type=ContentType.PHOTO,
+    ),
     Group(
         Column(
             Radio(
@@ -339,11 +343,7 @@ async def result_getter(dialog_manager: DialogManager, **kwargs):
 result = Window(
     Const(text='Ваши результаты прохождения третьего урока:'),
     Format(text="{result}"),
-    Const(text=edu_compleat_text, when='compleat_edu'),
     Column(
-        Url(Const('🔵 Сообщить в Telegram'), url=Format("{url_tg}")),
-        Url(Const('🟢 Сообщить в WhatsApp'), url=Format("{url_wa}")),
-        Url(Const('🟣 Сообщить в Max'), url=Format("{url_max}")),
         Cancel(Const('В главное меню'), id='cancel', show_mode=ShowMode.SEND),
     ),
     state=HpThirdLessonDialog.result_third_lesson,
