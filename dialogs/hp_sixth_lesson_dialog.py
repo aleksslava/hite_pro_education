@@ -160,7 +160,7 @@ vebinar_1 = Window(
 
 
 first_question = Window(
-    Format(text="<b>Вопрос #{quest_number} из {count_quest}:\n\n{title}</b>\n{radio}"),
+    Format(text="<b>Вопрос #{quest_number} из {count_quest}:\n\n{title}</b>\n{multi}"),
     Group(
         Column(
             Multiselect(
@@ -226,8 +226,8 @@ fourth_question = Window(
     Group(
         Column(
             Multiselect(
-                checked_text=Format('✅ {item[0]}'),
-                unchecked_text=Format('️◻️ {item[0]}'),
+                checked_text=Format('✅ Вариант {item[1]}'),
+                unchecked_text=Format('️◻️ Вариант {item[1]}'),
                 id='fourth_question_answers_checked',
                 item_id_getter=operator.itemgetter(1),
                 items="question_answers",
@@ -242,7 +242,7 @@ fourth_question = Window(
     )
 
 fifth_question = Window(
-    Format(text="<b>Вопрос #{quest_number} из {count_quest}:\n\n{title}</b>\n{multi}"),
+    Format(text="<b>Вопрос #{quest_number} из {count_quest}:\n\n{title}</b>\n{radio}\n\n{text_answers}"),
     Group(
         Column(
             Radio(
@@ -262,7 +262,7 @@ fifth_question = Window(
     )
 
 sixth_question = Window(
-    Format(text="<b>Вопрос #{quest_number} из {count_quest}:\n\n{title}</b>\n{multi}"),
+    Format(text="<b>Вопрос #{quest_number} из {count_quest}:\n\n{title}</b>\n{radio}\n\n{text_answers}"),
     Group(
         Column(
             Radio(
