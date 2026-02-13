@@ -208,7 +208,7 @@ async def lesson_access(user: User, session: AsyncSession, lesson_key: str) -> b
     if user is None or user.id is None:
         return False
     required_key = ''
-    for index, lesson in enumerate(lessons, 1):
+    for index, lesson in enumerate(lessons):
         if lesson['title'] == lesson_key:
             required_key = lessons[index-1].get('title')
     # if lesson_key == "lesson_2":
