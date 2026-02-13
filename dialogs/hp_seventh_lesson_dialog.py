@@ -268,7 +268,7 @@ sixth_question = Window(
             Radio(
                 checked_text=Format('🟢 {item[0]}'),
                 unchecked_text=Format('⚪ {item[0]}'),
-                id='fourth_question_answers_checked',
+                id='sixth_question_answers_checked',
                 item_id_getter=operator.itemgetter(1),
                 items="question_answers",
                 on_state_changed=radio_question_answers_checked,
@@ -288,7 +288,7 @@ seventh_question = Window(
             Radio(
                 checked_text=Format('🟢 Вариант {item[1]}'),
                 unchecked_text=Format('⚪ Вариант {item[1]}'),
-                id='fourth_question_answers_checked',
+                id='seventh_question_answers_checked',
                 item_id_getter=operator.itemgetter(1),
                 items="question_answers",
                 on_state_changed=radio_question_answers_checked,
@@ -308,7 +308,7 @@ eighth_question = Window(
             Radio(
                 checked_text=Format('🟢 Вариант {item[1]}'),
                 unchecked_text=Format('⚪ Вариант {item[1]}'),
-                id='fourth_question_answers_checked',
+                id='eighth_question_answers_checked',
                 item_id_getter=operator.itemgetter(1),
                 items="question_answers",
                 on_state_changed=radio_question_answers_checked,
@@ -328,7 +328,7 @@ ninth_question = Window(
             Radio(
                 checked_text=Format('🟢 Вариант {item[1]}'),
                 unchecked_text=Format('⚪ Вариант {item[1]}'),
-                id='fourth_question_answers_checked',
+                id='ninth_question_answers_checked',
                 item_id_getter=operator.itemgetter(1),
                 items="question_answers",
                 on_state_changed=radio_question_answers_checked,
@@ -348,7 +348,7 @@ tenth_question = Window(
             Radio(
                 checked_text=Format('🟢 Вариант {item[1]}'),
                 unchecked_text=Format('⚪ Вариант {item[1]}'),
-                id='fourth_question_answers_checked',
+                id='tenth_question_answers_checked',
                 item_id_getter=operator.itemgetter(1),
                 items="question_answers",
                 on_state_changed=radio_question_answers_checked,
