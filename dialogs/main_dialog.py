@@ -21,7 +21,7 @@ from db.models import User, HpLessonResult as LessonResult
 from amo_api.amo_api import AmoCRMWrapper
 from aiogram.utils.chat_action import ChatActionSender
 
-from service.questions_lexicon import welcome_message
+from service.questions_lexicon import welcome_message, exam_in_message
 from service.service import get_lessons_buttons, lesson_access
 
 logger = logging.getLogger(__name__)
@@ -357,7 +357,7 @@ async def exam_lesson_start(callback: CallbackQuery, button: Button, dialog_mana
                 logger.exception("Не удалось удалить предыдущее сообщение перед стартом экзамена")
 
             await callback.message.answer(
-                "<b>Экзамен HiTE PRO</b>\n\nНажмите кнопку ниже, чтобы открыть экзамен.",
+                text=exam_in_message,
                 reply_markup=kb,
             )
 
