@@ -166,7 +166,7 @@ first_question = Window(
             Multiselect(
                 checked_text=Format('✅ {item[0]}'),
                 unchecked_text=Format('️◻️ {item[0]}'),
-                id='seventh_question_answers_checked',
+                id='first_question_answers_checked',
                 item_id_getter=operator.itemgetter(1),
                 items="question_answers",
                 on_state_changed=multiselect_question_answers_checked,
@@ -207,7 +207,7 @@ third_question = Window(
             Radio(
                 checked_text=Format('🟢 Вариант {item[1]}'),
                 unchecked_text=Format('⚪ Вариант {item[1]}'),
-                id='second_question_answers_checked',
+                id='third_question_answers_checked',
                 item_id_getter=operator.itemgetter(1),
                 items="question_answers",
                 on_state_changed=radio_question_answers_checked,
@@ -228,7 +228,7 @@ fourth_question = Window(
             Multiselect(
                 checked_text=Format('✅ {item[0]}'),
                 unchecked_text=Format('️◻️ {item[0]}'),
-                id='seventh_question_answers_checked',
+                id='fourth_question_answers_checked',
                 item_id_getter=operator.itemgetter(1),
                 items="question_answers",
                 on_state_changed=multiselect_question_answers_checked,
@@ -248,7 +248,7 @@ fifth_question = Window(
             Radio(
                 checked_text=Format('🟢 Вариант {item[1]}'),
                 unchecked_text=Format('⚪ Вариант {item[1]}'),
-                id='fourth_question_answers_checked',
+                id='fifth_question_answers_checked',
                 item_id_getter=operator.itemgetter(1),
                 items="question_answers",
                 on_state_changed=radio_question_answers_checked,
@@ -268,7 +268,7 @@ sixth_question = Window(
             Radio(
                 checked_text=Format('🟢 Вариант {item[1]}'),
                 unchecked_text=Format('⚪ Вариант {item[1]}'),
-                id='fourth_question_answers_checked',
+                id='sixth_question_answers_checked',
                 item_id_getter=operator.itemgetter(1),
                 items="question_answers",
                 on_state_changed=radio_question_answers_checked,
@@ -356,11 +356,7 @@ async def result_getter(dialog_manager: DialogManager, **kwargs):
 result = Window(
     Const(text='Ваши результаты прохождения шестого урока:'),
     Format(text="{result}"),
-    Const(text=edu_compleat_text, when='compleat_edu'),
     Column(
-        Url(Const('🔵 Сообщить в Telegram'), url=Format("{url_tg}")),
-        Url(Const('🟢 Сообщить в WhatsApp'), url=Format("{url_wa}")),
-        Url(Const('🟣 Сообщить в Max'), url=Format("{url_max}")),
         Cancel(Const('В главное меню'), id='cancel', show_mode=ShowMode.SEND),
     ),
     state=HpSixthLessonDialog.result_sixth_lesson,

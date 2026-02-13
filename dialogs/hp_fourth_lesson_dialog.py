@@ -395,11 +395,7 @@ async def result_getter(dialog_manager: DialogManager, **kwargs):
 result = Window(
     Const(text='Ваши результаты прохождения четвертого урока:'),
     Format(text="{result}"),
-    Const(text=edu_compleat_text, when='compleat_edu'),
     Column(
-        Url(Const('🔵 Сообщить в Telegram'), url=Format("{url_tg}")),
-        Url(Const('🟢 Сообщить в WhatsApp'), url=Format("{url_wa}")),
-        Url(Const('🟣 Сообщить в Max'), url=Format("{url_max}")),
         Cancel(Const('В главное меню'), id='cancel', show_mode=ShowMode.SEND),
     ),
     state=HpFourthLessonDialog.result_fourth_lesson,

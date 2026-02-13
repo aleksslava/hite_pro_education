@@ -11,6 +11,8 @@ from dialogs.admin_dialog import admin_getter, admin_dialog
 from dialogs.error_dialog import errors_router
 from dialogs.hp_fifth_lesson_dialog import hp_fifth_lesson_dialog
 from dialogs.hp_fourth_lesson_dialog import hp_fourth_lesson_dialog
+from dialogs.hp_seventh_lesson_dialog import hp_seventh_lesson_dialog
+from dialogs.hp_sixth_lesson_dialog import hp_sixth_lesson_dialog
 from dialogs.main_dialog import main_menu_dialog
 from dialogs.hp_first_lesson_dialog import hp_first_lesson_dialog
 from dialogs.hp_second_lesson_dialog import hp_second_lesson_dialog
@@ -62,7 +64,8 @@ dp.errors.middleware(AmoApiMiddleware(amo_api, amo_fields=config.amo_fields, adm
 
 dp.include_router(main_menu_router)
 dp.include_routers(main_menu_dialog, hp_first_lesson_dialog, hp_second_lesson_dialog,
-                   hp_third_lesson_dialog, hp_fourth_lesson_dialog, hp_fifth_lesson_dialog, admin_dialog, errors_router)
+                   hp_third_lesson_dialog, hp_fourth_lesson_dialog, hp_fifth_lesson_dialog, hp_sixth_lesson_dialog,
+                   hp_seventh_lesson_dialog, admin_dialog, errors_router)
 
 setup_dialogs(dp)
 

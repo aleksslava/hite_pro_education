@@ -324,7 +324,7 @@ questions_5 = {'HpFifthLessonDialog:first_question': {'title': 'Куда пом�
                                              'key': 'q6'},
  'HpFifthLessonDialog:seventh_question': {'title': 'Каковы максимальные нагрузки на блоки Relay-F1 и Relay-F2?',
                                                'answers': [('440 Вт, 2 А для обоих блоков', '1', True),
-                                                           ('440 Вт, 2А Relay-F1 для и 880 Вт, 2А для Relay-F2', '2', False),
+                                                           ('440 Вт, 2А для Relay-F1 и 880 Вт, 2А для Relay-F2', '2', False),
                                                            ('Нет правильного ответа', '3', False)],
                                                'key': 'q7'},
  'HpFifthLessonDialog:eighth_question': {'title': 'Как работает блок в моностабильном режиме?',
