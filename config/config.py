@@ -24,7 +24,8 @@ amo_fields = {
         'hite_pro_education': 3616530,
     },
     'fields_id': {
-        'tg_id': 1097296
+        'tg_id': 1097296,
+        'tg_username': 1097294,
     }
 }
 

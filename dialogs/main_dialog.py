@@ -432,6 +432,7 @@ async def on_contact(message: Message, _, dialog_manager):
     pipelines: dict = dialog_manager.middleware_data['amo_fields'].get('pipelines')
     tg_id = dialog_manager.event.from_user.id
     tg_field_id = dialog_manager.middleware_data['amo_fields'].get('fields_id').get('tg_id')
+    username_field_id = dialog_manager.middleware_data['amo_fields'].get('fields_id').get('tg_username')
     phone_number = message.contact.phone_number
     logger.info(f'Пользователь tg_id: {tg_id} поделился номером телефона: {phone_number}')
     result = await session.execute(select(User).where(User.tg_user_id == tg_id))
@@ -441,7 +442,8 @@ async def on_contact(message: Message, _, dialog_manager):
 
     if contact_data: # Данные контакта найдены в амосрм
         if not contact_data['tg_id']: # Если tg_id нет в контакте, то добавляем
-            amo_api.add_tgid_to_contact(contact_id=contact_data["amo_contact_id"], tg_id=tg_id, tg_id_field=tg_field_id)
+            amo_api.add_tg_to_contact(contact_id=contact_data["amo_contact_id"], tg_id=tg_id, tg_id_field=tg_field_id,
+                                      username_id=username_field_id, username=dialog_manager.event.from_user.username)
             logger.info('попытка записать данные tg_id')
         user.first_name = contact_data["first_name"]
         user.last_name = contact_data["last_name"]
@@ -467,7 +469,8 @@ async def on_contact(message: Message, _, dialog_manager):
         new_contact_id = amo_api.create_new_contact(first_name=dialog_manager.event.from_user.first_name,
                                                     last_name=dialog_manager.event.from_user.last_name,
                                                     phone=message.contact.phone_number,
-                                                    tg_id_field=tg_field_id, tg_id=tg_id,)
+                                                    tg_id_field=tg_field_id, tg_id=tg_id,
+                                                    username_id=username_field_id, username=dialog_manager.event.from_user.username)
         new_lead_id = amo_api.send_lead_to_amo(pipeline_id=pipelines.get('hite_pro_education'),
                                                status_id=status_fields.get('admitted_to_training'),
                                                contact_id=new_contact_id,

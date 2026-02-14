@@ -585,7 +585,8 @@ class AmoCRMWrapper:
         logger.info(f'Статус код запроса записей покупателя: {response.status_code}')
         return response.json()
 
-    def create_new_contact(self, first_name: str, last_name: str, phone: str, tg_id_field: int, tg_id: str):
+    def create_new_contact(self, first_name: str, last_name: str, phone: str, tg_id_field: int, tg_id: str,
+                           username_id: int, username: str):
         url = '/api/v4/contacts'
         data = [{
             'first_name': first_name,
@@ -601,8 +602,14 @@ class AmoCRMWrapper:
                 {"field_id": tg_id_field,
                  "values": [
                      {
-                      "value": tg_id
+                      "value": str(tg_id)
                       }, ]
+                 },
+                {"field_id": username_id,
+                 "values": [
+                     {
+                         "value": str(username)
+                     }, ]
                  }
             ],
         }]
@@ -610,7 +617,7 @@ class AmoCRMWrapper:
         contact_id = response.json().get('_embedded').get('contacts')[0].get('id')
         return contact_id
 
-    def add_tgid_to_contact(self, contact_id: int, tg_id_field: int, tg_id: str):
+    def add_tg_to_contact(self, contact_id: int, tg_id_field: int, tg_id: str, username_id: int, username: str):
         url = f'/api/v4/contacts/{contact_id}'
         data = {
             'custom_fields_values': [
@@ -618,6 +625,12 @@ class AmoCRMWrapper:
                  "values": [
                      {
                          "value": str(tg_id)
+                     }, ]
+                 },
+                {"field_id": username_id,
+                 "values": [
+                     {
+                         "value": str(username)
                      }, ]
                  }
             ],
