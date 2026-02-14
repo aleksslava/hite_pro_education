@@ -617,7 +617,7 @@ class AmoCRMWrapper:
                 {"field_id": tg_id_field,
                  "values": [
                      {
-                         "value": tg_id
+                         "value": str(tg_id)
                      }, ]
                  }
             ],
