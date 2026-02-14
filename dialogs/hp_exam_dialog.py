@@ -190,6 +190,7 @@ async def result_getter(dialog_manager: DialogManager, **kwargs):
                         status_id=status_fields.get("compleat_exam"),
                         lead_id=str(user.amo_deal_id),
                     )
+                    result_text = '<b>Экзамен пройден!</b>\n\n' + result_text
                     await dialog_manager.event.bot.send_message(text=result_text, chat_id=tg_id)
 
     return {
@@ -216,7 +217,7 @@ vebinar_1 = Window(
 
 
 result = Window(
-    Format(text="<b>Экзамен не пройден!</b>🥹\n\n"),
+    Format(text="<b>Экзамен не пройден!</b>🥹\n\n", when='result_text'),
     Format(text="{result_text}", when='result_text'),
     Format(text="{compleat_text}", when='passed'),
     Column(
