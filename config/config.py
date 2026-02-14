@@ -22,9 +22,9 @@ amo_fields = {
     },
     'pipelines': {
         'hite_pro_education': 3616530,
+    },
     'fields_id': {
         'tg_id': 1097296
-    }
     }
 }
 
