@@ -624,8 +624,10 @@ class AmoCRMWrapper:
         }]
         response = self._base_request(type='patch', endpoint=url, data=data)
         if response.status_code == 200:
+            logger.info('TG_ID успешно добавлен в контакт')
             return True
         else:
+            logger.error('TG_ID не добавлен в контакт')
             return False
 
     def find_lead_by_contact_in_pipeline_stage(
