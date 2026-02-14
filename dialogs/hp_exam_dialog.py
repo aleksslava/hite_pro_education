@@ -19,7 +19,7 @@ from sqlalchemy.orm import selectinload
 from amo_api.amo_api import AmoCRMWrapper
 from db import HpLessonResult as LessonResult
 from fsm_forms.fsm_models import HpExamLessonDialog
-from service.questions_lexicon import exam_lesson, edu_compleat_text
+from service.questions_lexicon import exam_lesson, edu_compleat_text, urls_to_messanger
 
 logger = logging.getLogger(__name__)
 
@@ -196,6 +196,9 @@ async def result_getter(dialog_manager: DialogManager, **kwargs):
         "result_text": result_text if not passed else "",
         "passed": passed,
         "compleat_text": edu_compleat_text,
+        'url_tg': urls_to_messanger.get('tg'),
+        'url_wa': urls_to_messanger.get('whatsapp'),
+        'url_max': urls_to_messanger.get('max'),
     }
 
 
@@ -213,6 +216,7 @@ vebinar_1 = Window(
 
 
 result = Window(
+    Format(text="<b>Экзамен не пройден!</b>🥹\n\n"),
     Format(text="{result_text}", when='result_text'),
     Format(text="{compleat_text}", when='passed'),
     Column(
