@@ -108,12 +108,6 @@ class HpSeventhLessonDialog(StatesGroup):
 
 class HpExamLessonDialog(StatesGroup):
     vebinar_1 = State()
-    first_question = State()
-    second_question = State()
-    third_question = State()
-    fourth_question = State()
-    fifth_question = State()
-    confirm_answers = State()
     result_exam_lesson = State()
 
 class AdminDialog(StatesGroup):

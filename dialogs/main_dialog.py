@@ -441,7 +441,7 @@ async def on_contact(message: Message, _, dialog_manager):
 
     if contact_data: # Данные контакта найдены в амосрм
         if not contact_data['tg_id']: # Если tg_id нет в контакте, то добавляем
-            pass # Дописать обработку!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+            amo_api.add_tgid_to_contact(contact_id=contact_data["amo_contact_id"], tg_id=tg_id, tg_id_field=tg_field_id)
         user.first_name = contact_data["first_name"]
         user.last_name = contact_data["last_name"]
         user.amo_contact_id = contact_data["amo_contact_id"]

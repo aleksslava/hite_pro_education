@@ -475,7 +475,6 @@ class AmoCRMWrapper:
 
         },]
         response = self._base_request(type='post', endpoint=url, data=data)
-        logger.info(response.json())
         lead_id = response.json().get('_embedded').get('leads')[0].get('id')
         return lead_id
 
@@ -602,7 +601,7 @@ class AmoCRMWrapper:
                 {"field_id": tg_id_field,
                  "values": [
                      {
-                      "value": str(phone)
+                      "value": tg_id
                       }, ]
                  }
             ],
@@ -610,6 +609,24 @@ class AmoCRMWrapper:
         response = self._base_request(type='post', endpoint=url, data=data)
         contact_id = response.json().get('_embedded').get('contacts')[0].get('id')
         return contact_id
+
+    def add_tgid_to_contact(self, contact_id: int, tg_id_field: int, tg_id: str):
+        url = f'/api/v4/contacts/{contact_id}'
+        data = [{
+            'custom_fields_values': [
+                {"field_id": tg_id_field,
+                 "values": [
+                     {
+                         "value": tg_id
+                     }, ]
+                 }
+            ],
+        }]
+        response = self._base_request(type='patch', endpoint=url, data=data)
+        if response.status_code == 200:
+            return True
+        else:
+            return False
 
     def find_lead_by_contact_in_pipeline_stage(
             self,

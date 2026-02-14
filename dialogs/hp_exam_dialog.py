@@ -10,7 +10,7 @@ from aiogram.types import (
 )
 from aiogram_dialog import Dialog, DialogManager, ShowMode, Window
 from aiogram_dialog.widgets.input import MessageInput
-from aiogram_dialog.widgets.kbd import Cancel
+from aiogram_dialog.widgets.kbd import Cancel, Url, Column
 from aiogram_dialog.widgets.text import Const, Format
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -19,7 +19,7 @@ from sqlalchemy.orm import selectinload
 from amo_api.amo_api import AmoCRMWrapper
 from db import HpLessonResult as LessonResult
 from fsm_forms.fsm_models import HpExamLessonDialog
-from service.questions_lexicon import exam_lesson
+from service.questions_lexicon import exam_lesson, edu_compleat_text
 
 logger = logging.getLogger(__name__)
 
@@ -49,50 +49,46 @@ def _safe_bool(value, default: bool = False) -> bool:
 
 
 def _evaluate_exam_answers(user_answers: dict) -> dict:
-    total_items = 0
-    correct_items = 0
-    per_question_stats: list[str] = []
+    user_result_lines: list[str] = []
+    amo_note_lines: list[str] = []
+    correct_questions = 0
 
-    for q_key, expected_map in exam_lesson.items():
+    for question_number, (q_key, expected_map) in enumerate(exam_lesson.items(), start=1):
         incoming_map = user_answers.get(q_key, {})
         if not isinstance(incoming_map, dict):
             incoming_map = {}
-        expected_keys = set(expected_map.keys())
-        incoming_keys = set(incoming_map.keys())
 
-        question_total = 0
-        question_correct = 0
+        question_is_correct = True
+        amo_note_lines.append(f"Вопрос {question_number}:")
 
         for expected_key, expected_value in expected_map.items():
-            question_total += 1
-            total_items += 1
             actual_value = incoming_map.get(expected_key)
             is_correct = _safe_int(actual_value, default=-999999) == _safe_int(expected_value)
-            if is_correct:
-                question_correct += 1
-                correct_items += 1
+            if not is_correct:
+                question_is_correct = False
 
-        extra_keys_count = len(incoming_keys - expected_keys)
-        if extra_keys_count > 0:
-            question_total += extra_keys_count
-            total_items += extra_keys_count
+            actual_value_text = str(actual_value) if actual_value is not None else "не указан"
+            amo_note_lines.append(f"{expected_key} - {actual_value_text} {is_correct}")
 
-        per_question_stats.append(f"{q_key}: {question_correct}/{question_total}")
+        extra_keys = [key for key in incoming_map.keys() if key not in expected_map]
+        for extra_key in extra_keys:
+            question_is_correct = False
+            amo_note_lines.append(f"{extra_key} - {incoming_map.get(extra_key)} False")
 
-    score = _safe_int(round((correct_items / total_items) * 100) if total_items else 0)
-    passed = score >= 80
-    result_text = (
-        f"Верных ответов: {correct_items}/{total_items} ({score}%).\n"
-        f"По блокам: {', '.join(per_question_stats)}.\n"
-        f"{'Экзамен пройден.' if passed else 'Экзамен не пройден.'}"
-    )
+        if question_is_correct:
+            correct_questions += 1
+
+        user_result_lines.append(f"Вопрос {question_number} {'✅' if question_is_correct else '❌'}")
+
+    passed = correct_questions == len(exam_lesson)
+    result_text = "\n".join(user_result_lines)
+    amo_note_text = "\n".join(amo_note_lines)
     return {
-        "score": score,
+        "score": correct_questions,
         "passed": passed,
         "total_questions": len(exam_lesson),
-        "total_items": total_items,
-        "correct_answers": correct_items,
         "result_text": result_text,
+        "amo_note_text": amo_note_text,
     }
 
 
@@ -157,6 +153,7 @@ async def result_getter(dialog_manager: DialogManager, **kwargs):
     score = _safe_int(payload.get("score"), 0)
     passed = _safe_bool(payload.get("passed"), default=False)
     result_text = str(payload.get("result_text", "Результат экзамена получен."))
+    amo_note_text = str(payload.get("amo_note_text", ""))
 
     logger.info(
         "Получен результат экзамена для пользователя tg_id=%s. score=%s, passed=%s",
@@ -185,7 +182,7 @@ async def result_getter(dialog_manager: DialogManager, **kwargs):
             if user is not None and user.amo_deal_id is not None:
                 amo_api.add_new_note_to_lead(
                     lead_id=user.amo_deal_id,
-                    text=f"Результаты экзамена: {result_text}",
+                    text=amo_note_text or result_text,
                 )
                 if passed:
                     amo_api.push_lead_to_status(
@@ -193,20 +190,20 @@ async def result_getter(dialog_manager: DialogManager, **kwargs):
                         status_id=status_fields.get("compleat_exam"),
                         lead_id=str(user.amo_deal_id),
                     )
+                    await dialog_manager.event.bot.send_message(text=result_text, chat_id=tg_id)
 
     return {
-        "result_text": result_text,
-        "score": score,
-        "passed_text": "✅ Экзамен пройден" if passed else "❌ Экзамен не пройден",
+        "result_text": result_text if not passed else "",
+        "passed": passed,
+        "compleat_text": edu_compleat_text,
     }
 
 
 vebinar_1 = Window(
     Const(
         text=(
-            "<b>Экзамен HiTE PRO</b>\n\n"
-            "Откройте экзамен через кнопку на клавиатуре ниже. "
-            "После завершения WebApp автоматически отправит ваши ответы в бот."
+            "<b>🎓 Экзамен HiTE PRO</b>\n\n"
+            "👇Откройте экзамен через кнопку на клавиатуре ниже👇"
         )
     ),
     MessageInput(on_webapp_data, ContentType.WEB_APP_DATA),
@@ -216,9 +213,14 @@ vebinar_1 = Window(
 
 
 result = Window(
-    Const("Результаты экзамена:"),
-    Format("{result_text}\n\nИтог: {passed_text}\nБаллы: {score}%"),
-    Cancel(Const("В главное меню"), id="cancel", show_mode=ShowMode.SEND),
+    Format(text="{result_text}", when='result_text'),
+    Format(text="{compleat_text}", when='passed'),
+    Column(
+        Url(Const('🔵 Сообщить в Telegram'), url=Format("{url_tg}"), when='passed'),
+        Url(Const('🟢 Сообщить в WhatsApp'), url=Format("{url_wa}"), when='passed'),
+        Url(Const('🟣 Сообщить в Max'), url=Format("{url_max}"), when='passed'),
+        Cancel(Const("В главное меню"), id="cancel", show_mode=ShowMode.SEND),
+    ),
     state=HpExamLessonDialog.result_exam_lesson,
     getter=result_getter,
 )
