@@ -612,7 +612,7 @@ class AmoCRMWrapper:
 
     def add_tgid_to_contact(self, contact_id: int, tg_id_field: int, tg_id: str):
         url = f'/api/v4/contacts/{contact_id}'
-        data = [{
+        data = {
             'custom_fields_values': [
                 {"field_id": tg_id_field,
                  "values": [
@@ -621,7 +621,7 @@ class AmoCRMWrapper:
                      }, ]
                  }
             ],
-        }]
+        }
         response = self._base_request(type='patch', endpoint=url, data=data)
         if response.status_code == 200:
             logger.info('TG_ID успешно добавлен в контакт')
