@@ -628,6 +628,7 @@ class AmoCRMWrapper:
             return True
         else:
             logger.error('TG_ID не добавлен в контакт')
+            logger.error(response.json())
             return False
 
     def find_lead_by_contact_in_pipeline_stage(
