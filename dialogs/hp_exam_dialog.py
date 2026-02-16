@@ -230,11 +230,6 @@ result = Window(
         type=ContentType.PHOTO,
         when='passed',
     ),
-    StaticMedia(
-        path=BASE_DIR / "media" / "photo" / "exam_2.png",
-        type=ContentType.PHOTO,
-        when='passed',
-    ),
     Format(text="<b>Экзамен не пройден!</b>🥹\n\n", when='result_text'),
     Format(text="{result_text}", when='result_text'),
     Format(text="{compleat_text}", when='passed'),
