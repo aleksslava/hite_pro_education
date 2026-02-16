@@ -332,7 +332,7 @@ async def result_getter(dialog_manager: DialogManager, **kwargs):
 
         user_lead_id = user.amo_deal_id
         status_id_in_amo = amo_api.get_lead_by_id(lead_id=user_lead_id).get('status_id')
-        push_to_new_status = check_push_to_new_status(lesson_key='compleat_lesson_3',
+        push_to_new_status = await check_push_to_new_status(lesson_key='compleat_lesson_3',
                                                       lead_status=status_id_in_amo)
 
         # Перемещаем сделку далее по воронке обучения, если успешно. В сделку записываем примечание с результатами
