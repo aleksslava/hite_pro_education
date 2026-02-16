@@ -20,6 +20,7 @@ from amo_api.amo_api import AmoCRMWrapper
 from db import HpLessonResult as LessonResult
 from fsm_forms.fsm_models import HpExamLessonDialog
 from service.questions_lexicon import exam_lesson, edu_compleat_text, urls_to_messanger
+from service.service import check_push_to_new_status
 
 logger = logging.getLogger(__name__)
 
@@ -184,12 +185,17 @@ async def result_getter(dialog_manager: DialogManager, **kwargs):
                     lead_id=user.amo_deal_id,
                     text=amo_note_text or result_text,
                 )
+                user_lead_id = user.amo_deal_id
+                status_id_in_amo = amo_api.get_lead_by_id(lead_id=user_lead_id).get('status_id')
+                push_to_new_status = check_push_to_new_status(lesson_key='compleat_exam',
+                                                              lead_status=status_id_in_amo)
                 if passed:
-                    amo_api.push_lead_to_status(
-                        pipeline_id=pipelines.get("hite_pro_education"),
-                        status_id=status_fields.get("compleat_exam"),
-                        lead_id=str(user.amo_deal_id),
-                    )
+                    if push_to_new_status:
+                        amo_api.push_lead_to_status(
+                            pipeline_id=pipelines.get("hite_pro_education"),
+                            status_id=status_fields.get("compleat_exam"),
+                            lead_id=str(user.amo_deal_id),
+                        )
                     result_text = '<b>Экзамен пройден!</b>\n\n' + result_text
                     await dialog_manager.event.bot.send_message(text=result_text, chat_id=tg_id)
 

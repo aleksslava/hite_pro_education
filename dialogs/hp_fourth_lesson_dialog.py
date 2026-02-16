@@ -16,7 +16,8 @@ from aiogram.enums import ContentType
 from aiogram_dialog.widgets.media import StaticMedia
 from config.config import BASE_DIR
 from service.questions_lexicon import questions_4 as questions, explan, edu_compleat_text, urls_to_messanger
-from service.service import pad_right, format_results, format_progress, checking_result, count_missed_answers
+from service.service import pad_right, format_results, format_progress, checking_result, count_missed_answers, \
+    check_push_to_new_status
 from sqlalchemy import select
 from sqlalchemy.orm import selectinload
 
@@ -381,8 +382,13 @@ async def result_getter(dialog_manager: DialogManager, **kwargs):
         # Отправляем примечание в сделку с обучением
         amo_api.add_new_note_to_lead(lead_id=user.amo_deal_id, text=f'Результаты урока №4: {result}')
 
+        user_lead_id = user.amo_deal_id
+        status_id_in_amo = amo_api.get_lead_by_id(lead_id=user_lead_id).get('status_id')
+        push_to_new_status = check_push_to_new_status(lesson_key='compleat_lesson_4',
+                                                      lead_status=status_id_in_amo)
+
         # Перемещаем сделку далее по воронке обучения, если успешно. В сделку записываем примечание с результатами
-        if compleat:
+        if compleat and push_to_new_status:
             amo_api.push_lead_to_status(pipeline_id=pipelines.get('hite_pro_education'),
                                         status_id=status_fields.get('compleat_lesson_4'),
                                         lead_id=str(user.amo_deal_id))
