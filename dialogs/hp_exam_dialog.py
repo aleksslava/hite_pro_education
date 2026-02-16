@@ -11,12 +11,14 @@ from aiogram.types import (
 from aiogram_dialog import Dialog, DialogManager, ShowMode, Window
 from aiogram_dialog.widgets.input import MessageInput
 from aiogram_dialog.widgets.kbd import Cancel, Url, Column
+from aiogram_dialog.widgets.media import StaticMedia
 from aiogram_dialog.widgets.text import Const, Format
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
 from amo_api.amo_api import AmoCRMWrapper
+from config.config import BASE_DIR
 from db import HpLessonResult as LessonResult
 from fsm_forms.fsm_models import HpExamLessonDialog
 from service.questions_lexicon import exam_lesson, edu_compleat_text, urls_to_messanger
@@ -223,6 +225,16 @@ vebinar_1 = Window(
 
 
 result = Window(
+    StaticMedia(
+        path=BASE_DIR / "media" / "photo" / "exam_1.jpg",
+        type=ContentType.PHOTO,
+        when='passed',
+    ),
+    StaticMedia(
+        path=BASE_DIR / "media" / "photo" / "exam_2.png",
+        type=ContentType.PHOTO,
+        when='passed',
+    ),
     Format(text="<b>Экзамен не пройден!</b>🥹\n\n", when='result_text'),
     Format(text="{result_text}", when='result_text'),
     Format(text="{compleat_text}", when='passed'),
