@@ -1,9 +1,13 @@
+import logging
+
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from db import async_session_factory
 from db.models import User, HpLessonResult as LessonResult
 from service.questions_lexicon import lessons
+
+logger = logging.getLogger(__name__)
 
 def pad_right(s: str, width: int) -> str:
     # обычные пробелы иногда “съедаются”/выглядят странно в кнопках,
@@ -232,6 +236,7 @@ async def lesson_access(user: User, session: AsyncSession, lesson_key: str) -> b
 
 async def check_push_to_new_status(lesson_key: str, lead_status: int) -> bool:
     lead_status = int(lead_status)
+    logger.info(f'Входящие lesson_key: {lesson_key}, lead_status: {lead_status}')
     statuses_list = [
         {'key':'admitted_to_training',
          'id': 47244117},
@@ -265,8 +270,11 @@ async def check_push_to_new_status(lesson_key: str, lead_status: int) -> bool:
 
         if lesson['id'] == lead_status:
             lead_index = index
+    logger.info(f'Индекс lesson_key: {lesson_key}, lead_status: {lead_status}')
 
     if lead_index >= lesson_index:
+        logger.info('Функция возвратила False')
         return False
     else:
+        logger.info('Функция возвратила True')
         return True
