@@ -226,14 +226,14 @@ vebinar_1 = Window(
 
 result = Window(
     StaticMedia(
-        path=BASE_DIR / "media" / "photo" / "exam_1.jpg",
+        path=BASE_DIR / "media" / "photo" / "exam_2.png",
         type=ContentType.PHOTO,
         when='passed',
     ),
     Format(text="<b>Экзамен не пройден!</b>🥹\n\n", when='result_text'),
     Format(text="{result_text}", when='result_text'),
     Format(text="{compleat_text}", when='passed'),
-    Format(text='Смотрите <a href="https://vk.com/video-140176277_456239582?list=ln-ZzlVOBtZszjuNCd61Z&clckid=1d2b9df5">видеопоздравление</a> от основателя компании Анатолия Кайибханова!',
+    Format(text='\nСмотрите <a href="https://vk.com/video-140176277_456239582?list=ln-ZzlVOBtZszjuNCd61Z&clckid=1d2b9df5">видеопоздравление</a> от основателя компании Анатолия Кайибханова!',
            when='passed'),
     Column(
         Url(Const('🔵 Сообщить в Telegram'), url=Format("{url_tg}"), when='passed'),
