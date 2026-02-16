@@ -231,6 +231,7 @@ async def lesson_access(user: User, session: AsyncSession, lesson_key: str) -> b
 
 
 async def check_push_to_new_status(lesson_key: str, lead_status: int) -> bool:
+    lead_status = int(lead_status)
     statuses_list = [
         {'key':'admitted_to_training',
          'id': 47244117},
