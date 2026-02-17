@@ -1,6 +1,6 @@
 from aiogram import Router
 from aiogram.filters.exception import ExceptionTypeFilter
-from aiogram.types import ErrorEvent
+from aiogram.types import ErrorEvent, ReplyKeyboardRemove
 
 from aiogram_dialog import DialogManager, StartMode, ShowMode
 from aiogram_dialog.api.exceptions import OutdatedIntent, UnknownIntent, UnknownState
@@ -13,7 +13,8 @@ errors_router = Router()
 async def on_dialog_stale(event: ErrorEvent, dialog_manager: DialogManager):
     callback = event.update.callback_query
     if callback:
-        await callback.answer("Меню устарело — открываю главное меню бота ✅", show_alert=True)
+        await callback.answer("Меню устарело — открываю главное меню бота ✅", show_alert=True,
+                              reply_markup=ReplyKeyboardRemove())
         try:
             if callback.message:
 
