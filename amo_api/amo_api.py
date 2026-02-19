@@ -457,7 +457,7 @@ class AmoCRMWrapper:
         logger.info(f'Запись ID_telegram: {tg_id} и username: {username} в контакт покупателя: {id_contact}\n'
                     f'Статус операции: {response.status_code}')
 
-    def send_lead_to_amo(self, pipeline_id: int, status_id: int, contact_id: int):
+    def send_lead_to_amo(self, pipeline_id: int, status_id: int, contact_id: int, utm_metriks_fields: dict):
         url = f'/api/v4/leads'
         data = [{
             'name': 'Автосделка из бота HiTE_PRO_Education',
@@ -591,7 +591,7 @@ class AmoCRMWrapper:
         data = [{
             'first_name': first_name,
             'last_name': last_name,
-            'responsible_user_id': 11047749,
+            'responsible_user_id': 453498,
             'custom_fields_values': [
                 {"field_id": 671750,
                  "values": [

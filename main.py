@@ -60,9 +60,11 @@ amo_api = AmoCRMWrapper(
 )
 
 dp.update.middleware(DbSessionMiddleware())
-dp.update.middleware(AmoApiMiddleware(amo_api, amo_fields=config.amo_fields, admin_id=config.admin))
+dp.update.middleware(AmoApiMiddleware(amo_api, amo_fields=config.amo_fields, admin_id=config.admin,
+                                      webhook_url=config.webhook_url, utm_token=config.utm_token))
 dp.errors.middleware(DbSessionMiddleware())
-dp.errors.middleware(AmoApiMiddleware(amo_api, amo_fields=config.amo_fields, admin_id=config.admin))
+dp.errors.middleware(AmoApiMiddleware(amo_api, amo_fields=config.amo_fields, admin_id=config.admin,
+                                      webhook_url=config.webhook_url, utm_token=config.utm_token))
 
 dp.include_router(main_menu_router)
 dp.include_routers(main_menu_dialog, hp_first_lesson_dialog, hp_second_lesson_dialog,

@@ -50,6 +50,7 @@ def _resolve_event_user(dialog_manager: DialogManager):
 async def main_menu_getter(dialog_manager: DialogManager, **kwargs):
     session: AsyncSession = dialog_manager.middleware_data['session']
     admin_id = int(dialog_manager.middleware_data['admin_id'])
+    utm_data = dialog_manager.dialog_data.get("utm", {})
     from_user = _resolve_event_user(dialog_manager)
     if from_user is None:
         raise ValueError("Cannot resolve user from dialog event")
@@ -60,11 +61,18 @@ async def main_menu_getter(dialog_manager: DialogManager, **kwargs):
     lessons_text = {}
     if user is None:
         logger.info(f'Для пользователя tg_id:{tg_id} не найдена запись в БД, создаю новую запись!')
+
         user = User(
             tg_user_id=tg_id,
             username=from_user.username,
             first_name=from_user.first_name,
             last_name=from_user.last_name,
+            utm_campaign=utm_data.get("utm_campaign", ''),
+            utm_medium=utm_data.get("utm_medium", ''),
+            utm_content=utm_data.get("utm_content", ''),
+            utm_term=utm_data.get("utm_term", ''),
+            utm_source=utm_data.get("utm_source", ''),
+            yclid=utm_data.get("yclid", ''),
         )
         session.add(user)
         await session.commit()
@@ -442,6 +450,7 @@ async def on_contact(message: Message, _, dialog_manager):
     session: AsyncSession = dialog_manager.middleware_data['session']
     status_fields: dict = dialog_manager.middleware_data['amo_fields'].get('statuses')
     pipelines: dict = dialog_manager.middleware_data['amo_fields'].get('pipelines')
+    utm_metriks = dialog_manager.middleware_data['amo_fields'].get('fields_id').get('utm_metriks')
     tg_id = dialog_manager.event.from_user.id
     tg_field_id = dialog_manager.middleware_data['amo_fields'].get('fields_id').get('tg_id')
     username_field_id = dialog_manager.middleware_data['amo_fields'].get('fields_id').get('tg_username')
@@ -473,6 +482,7 @@ async def on_contact(message: Message, _, dialog_manager):
             new_lead_id = amo_api.send_lead_to_amo(pipeline_id=pipelines.get('hite_pro_education'),
                                                    status_id=status_fields.get('admitted_to_training'),
                                                    contact_id=contact_data.get("amo_contact_id"),
+                                                   utm_metriks_fields=utm_metriks
                                                    )
             user.amo_deal_id = new_lead_id
             logger.info(f'Для пользователя{user.first_name} {user.last_name} tg_id: {tg_id} создана сделка {new_lead_id}')
@@ -489,6 +499,7 @@ async def on_contact(message: Message, _, dialog_manager):
         new_lead_id = amo_api.send_lead_to_amo(pipeline_id=pipelines.get('hite_pro_education'),
                                                status_id=status_fields.get('admitted_to_training'),
                                                contact_id=new_contact_id,
+                                               utm_metriks_fields=utm_metriks
                                                )
         user.amo_deal_id = new_lead_id
         user.amo_contact_id = new_contact_id

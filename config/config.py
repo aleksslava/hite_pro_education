@@ -27,6 +27,13 @@ amo_fields = {
     'fields_id': {
         'tg_id': 1097296,
         'tg_username': 1097294,
+        'utm_metriks': {
+            'utm_compaign': 1106028,
+            'utm_content': 930622,
+            'utm_source': 930624,
+            'utm_medium': 930630,
+            'utm_term': 935823
+        }
     }
 }
 
@@ -61,6 +68,8 @@ class Config:
     amo_config: AmoConfig
     amo_fields: dict
     admin: str
+    utm_token: str
+    webhook_url: str
 
 
 
@@ -88,5 +97,7 @@ def load_config(path: str | None = BASE_DIR / '.env'):
             amocrm_secret_code=env("AMOCRM_SECRET")
         ),
         amo_fields=amo_fields,
-        admin=env("ADMIN_ID")
+        admin=env("ADMIN_ID"),
+        utm_token=env("UTM_TOKEN"),
+        webhook_url=env("WEBHOOK_URL"),
     )
