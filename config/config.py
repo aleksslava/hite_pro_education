@@ -17,6 +17,7 @@ amo_fields = {
         'compleat_lesson_5': 41608788,
         'compleat_lesson_6': 41608791,
         'compleat_lesson_7': 58699973,
+        'ready_to_exam': 41608797,
         'compleat_exam': 41608800,
         'compleat_training': 35440800,
     },

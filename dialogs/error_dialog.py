@@ -15,6 +15,8 @@ async def on_dialog_stale(event: ErrorEvent, dialog_manager: DialogManager):
     if callback:
         await callback.answer("Меню устарело — открываю главное меню бота ✅", show_alert=True,
                               reply_markup=ReplyKeyboardRemove())
+        await callback.answer("Бот перезапущен",
+                              reply_markup=ReplyKeyboardRemove())
         try:
             if callback.message:
 

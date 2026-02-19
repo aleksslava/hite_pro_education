@@ -58,6 +58,7 @@ amo_api = AmoCRMWrapper(
     amocrm_access_token=config.amo_config.amocrm_access_token,
     amocrm_refresh_token=config.amo_config.amocrm_refresh_token,
 )
+
 dp.update.middleware(DbSessionMiddleware())
 dp.update.middleware(AmoApiMiddleware(amo_api, amo_fields=config.amo_fields, admin_id=config.admin))
 dp.errors.middleware(DbSessionMiddleware())

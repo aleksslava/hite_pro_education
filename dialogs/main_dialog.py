@@ -321,6 +321,9 @@ async def seventh_lesson_start(callback: CallbackQuery, button: Button, dialog_m
 
 async def exam_lesson_start(callback: CallbackQuery, button: Button, dialog_manager: DialogManager):
     session: AsyncSession = dialog_manager.middleware_data['session']
+    amo_api: AmoCRMWrapper = dialog_manager.middleware_data["amo_api"]
+    status_fields: dict = dialog_manager.middleware_data["amo_fields"].get("statuses")
+    pipelines: dict = dialog_manager.middleware_data["amo_fields"].get("pipelines")
     tg_id = dialog_manager.event.from_user.id
     logger.info(f'Запущен экзамен пользователем tg_ID:{tg_id}')
     result = await session.execute(select(User).where(User.tg_user_id == tg_id))
@@ -360,6 +363,15 @@ async def exam_lesson_start(callback: CallbackQuery, button: Button, dialog_mana
                 text=exam_in_message,
                 reply_markup=kb,
             )
+        try:
+            amo_api.push_lead_to_status(
+                pipeline_id=pipelines.get("hite_pro_education"),
+                status_id=status_fields.get("ready_to_exam"),
+                lead_id=str(user.amo_deal_id),
+            )
+        except Exception as error:
+            logger.error(f'Не получилось перевести сделку в этап "Приступил к экзамену"')
+            logger.exception(error)
 
         await dialog_manager.start(
             HpExamLessonDialog.vebinar_1,
@@ -433,7 +445,7 @@ async def on_contact(message: Message, _, dialog_manager):
     tg_id = dialog_manager.event.from_user.id
     tg_field_id = dialog_manager.middleware_data['amo_fields'].get('fields_id').get('tg_id')
     username_field_id = dialog_manager.middleware_data['amo_fields'].get('fields_id').get('tg_username')
-    username = dialog_manager.event.from_user.username if dialog_manager.event.from_user.username is not None else ''
+    username = '@' + dialog_manager.event.from_user.username if dialog_manager.event.from_user.username is not None else ''
     phone_number = message.contact.phone_number
     logger.info(f'Пользователь tg_id: {tg_id} поделился номером телефона: {phone_number}')
     result = await session.execute(select(User).where(User.tg_user_id == tg_id))

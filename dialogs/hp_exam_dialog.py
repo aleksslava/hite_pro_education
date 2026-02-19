@@ -71,7 +71,7 @@ def _evaluate_exam_answers(user_answers: dict) -> dict:
                 question_is_correct = False
 
             actual_value_text = str(actual_value) if actual_value is not None else "не указан"
-            amo_note_lines.append(f"{expected_key} - {actual_value_text} {is_correct}")
+            amo_note_lines.append(f"{expected_key} - {actual_value_text} {['❌', '✅'][is_correct]}")
 
         extra_keys = [key for key in incoming_map.keys() if key not in expected_map]
         for extra_key in extra_keys:
