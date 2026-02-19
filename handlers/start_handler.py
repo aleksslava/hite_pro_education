@@ -40,10 +40,8 @@ async def start(message: Message, dialog_manager: DialogManager, command: Comman
         except (aiohttp.ClientError, asyncio.TimeoutError, ValueError):
             pass
 
-    dialog_manager.dialog_data["utm"] = utm_data
-
     # Important: always set `mode=StartMode.RESET_STACK` you don't want to stack dialogs
-    await dialog_manager.start(MainDialog.main, mode=StartMode.RESET_STACK)
+    await dialog_manager.start(MainDialog.main, mode=StartMode.RESET_STACK, data=utm_data)
 
 
 
