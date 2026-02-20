@@ -9,6 +9,8 @@ import logging
 from pydantic import json
 from requests.exceptions import JSONDecodeError
 
+from db import User
+
 logger = logging.getLogger(__name__)
 
 
@@ -457,7 +459,18 @@ class AmoCRMWrapper:
         logger.info(f'Запись ID_telegram: {tg_id} и username: {username} в контакт покупателя: {id_contact}\n'
                     f'Статус операции: {response.status_code}')
 
-    def send_lead_to_amo(self, pipeline_id: int, status_id: int, contact_id: int, utm_metriks_fields: dict):
+    def send_lead_to_amo(self, pipeline_id: int, status_id: int, contact_id: int, utm_metriks_fields: dict,
+                         user: User):
+        custom_fields_values = []
+        for metrik, metrika_id in utm_metriks_fields.items():
+            custom_fields_values.append({
+                'field_id': metrika_id,
+                'values': [
+                    {
+                        'value': getattr(user, metrik)
+                    }
+                ]
+            })
         url = f'/api/v4/leads'
         data = [{
             'name': 'Автосделка из бота HiTE_PRO_Education',
@@ -465,6 +478,7 @@ class AmoCRMWrapper:
             'created_by': 0,
             'status_id': int(status_id),
             'responsible_user_id': 453498,
+            'custom_fields_values': custom_fields_values,
             '_embedded': {
                 'contacts': [
                     {

@@ -28,11 +28,12 @@ amo_fields = {
         'tg_id': 1097296,
         'tg_username': 1097294,
         'utm_metriks': {
-            'utm_compaign': 1106028,
+            'utm_campaign': 1106028,
             'utm_content': 930622,
             'utm_source': 930624,
             'utm_medium': 930630,
-            'utm_term': 935823
+            'utm_term': 935823,
+            'yclid': 944408
         }
     }
 }
