@@ -41,7 +41,7 @@ async def start(message: Message, dialog_manager: DialogManager, command: Comman
             pass
 
     # Important: always set `mode=StartMode.RESET_STACK` you don't want to stack dialogs
-    await dialog_manager.start(MainDialog.main, mode=StartMode.RESET_STACK, data=utm_data)
+    await dialog_manager.start(MainDialog.main, mode=StartMode.RESET_STACK, data={"utm_data": utm_data})
 
 
 

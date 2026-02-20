@@ -24,6 +24,7 @@ async def on_dialog_stale(event: ErrorEvent, dialog_manager: DialogManager):
                 await callback.message.delete()
         except Exception:
             pass
+    utm_data={}
 
-    await dialog_manager.start(MainDialog.main, mode=StartMode.RESET_STACK, show_mode=ShowMode.SEND)
+    await dialog_manager.start(MainDialog.main, mode=StartMode.RESET_STACK, show_mode=ShowMode.SEND, data={"utm_data": utm_data})
     return True
