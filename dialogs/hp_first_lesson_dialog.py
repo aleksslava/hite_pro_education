@@ -395,7 +395,7 @@ async def result_getter(dialog_manager: DialogManager, **kwargs):
     compleat = checking.get('passed')
     result = format_results(first_lesson_result, total_questions=len(questions))
 
-    logger.info(f'Запущена проверка результатов первого урока keyway. Пользователь tg_id {tg_id}. Результат проверки: баллов - {score}')
+    logger.info(f'Запущена проверка результатов первого урока hite pro. Пользователь tg_id {tg_id}. Результат проверки: баллов - {score}')
 
     lesson = None
     user = None
