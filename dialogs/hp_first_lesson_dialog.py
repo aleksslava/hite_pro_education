@@ -113,7 +113,6 @@ async def radio_question_answers_checked(
     key = questions.get(state).get("key")
     # (title, id, should_be_selected)
     items = dialog_manager.dialog_data.get(f"{key}_items", [])
-    logger.info(items)
     # Считаем "правильность" по каждому варианту
     per_option_result = {}
     for title, opt_id, should_be_selected in items:
