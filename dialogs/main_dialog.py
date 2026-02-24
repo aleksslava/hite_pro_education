@@ -22,7 +22,7 @@ from amo_api.amo_api import AmoCRMWrapper
 from aiogram.utils.chat_action import ChatActionSender
 
 from service.questions_lexicon import welcome_message, exam_in_message
-from service.service import get_lessons_buttons, lesson_access
+from service.service import get_lessons_buttons, lesson_access, check_push_to_new_status
 
 logger = logging.getLogger(__name__)
 EXAM_WEBAPP_URL = "https://aleksslava.github.io/exam_edu.github.io/"
@@ -371,15 +371,19 @@ async def exam_lesson_start(callback: CallbackQuery, button: Button, dialog_mana
                 text=exam_in_message,
                 reply_markup=kb,
             )
-        try:
-            amo_api.push_lead_to_status(
-                pipeline_id=pipelines.get("hite_pro_education"),
-                status_id=status_fields.get("ready_to_exam"),
-                lead_id=str(user.amo_deal_id),
-            )
-        except Exception as error:
-            logger.error(f'Не получилось перевести сделку в этап "Приступил к экзамену"')
-            logger.exception(error)
+        status_id_in_amo = amo_api.get_lead_by_id(lead_id=user.amo_deal_id).get('status_id')
+        push_to_new_status = await check_push_to_new_status(lesson_key='ready_to_exam',
+                                                            lead_status=status_id_in_amo)
+        if push_to_new_status:
+            try:
+                amo_api.push_lead_to_status(
+                    pipeline_id=pipelines.get("hite_pro_education"),
+                    status_id=status_fields.get("ready_to_exam"),
+                    lead_id=str(user.amo_deal_id),
+                )
+            except Exception as error:
+                logger.error(f'Не получилось перевести сделку в этап "Приступил к экзамену"')
+                logger.exception(error)
 
         await dialog_manager.start(
             HpExamLessonDialog.vebinar_1,
