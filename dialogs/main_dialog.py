@@ -50,7 +50,10 @@ def _resolve_event_user(dialog_manager: DialogManager):
 async def main_menu_getter(dialog_manager: DialogManager, **kwargs):
     session: AsyncSession = dialog_manager.middleware_data['session']
     admin_id = int(dialog_manager.middleware_data['admin_id'])
-    utm_data = dialog_manager.start_data.get("utm_data", {})
+    if dialog_manager.start_data is not None:
+        utm_data = dialog_manager.start_data.get("utm_data", {})
+    else:
+        utm_data = {}
     from_user = _resolve_event_user(dialog_manager)
     if from_user is None:
         raise ValueError("Cannot resolve user from dialog event")
