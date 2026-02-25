@@ -486,7 +486,8 @@ async def on_contact(message: Message, _, dialog_manager):
             new_lead_id = amo_api.send_lead_to_amo(pipeline_id=pipelines.get('hite_pro_education'),
                                                    status_id=status_fields.get('admitted_to_training'),
                                                    contact_id=contact_data.get("amo_contact_id"),
-                                                   utm_metriks_fields=utm_metriks
+                                                   utm_metriks_fields=utm_metriks,
+                                                   user=user
                                                    )
             user.amo_deal_id = new_lead_id
             logger.info(f'Для пользователя{user.first_name} {user.last_name} tg_id: {tg_id} создана сделка {new_lead_id}')
@@ -503,7 +504,8 @@ async def on_contact(message: Message, _, dialog_manager):
         new_lead_id = amo_api.send_lead_to_amo(pipeline_id=pipelines.get('hite_pro_education'),
                                                status_id=status_fields.get('admitted_to_training'),
                                                contact_id=new_contact_id,
-                                               utm_metriks_fields=utm_metriks
+                                               utm_metriks_fields=utm_metriks,
+                                               user=user
                                                )
         user.amo_deal_id = new_lead_id
         user.amo_contact_id = new_contact_id
