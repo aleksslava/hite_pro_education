@@ -29,17 +29,13 @@ def processing_lead(amo_api: AmoCRMWrapper,
                     pipeline_id: str,
                     status_id: str) -> dict|None:
 
-    lead = amo_api.find_lead_by_contact_in_pipeline_stage(contact_id=str(contact_id),
+    lead_id = amo_api.find_lead_by_contact_in_pipeline_stage_new(contact_id=str(contact_id),
                                                           pipeline_id=pipeline_id,
                                                           status_id=status_id)
-    if lead is not None:
-        lead_id = lead.get('id', '')
-    else:
-        lead_id = False
-
-    if lead_id:
+    if lead_id is not None:
         return {
             "amo_deal_id": lead_id,
         }
     else:
         return None
+

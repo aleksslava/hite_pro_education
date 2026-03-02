@@ -729,6 +729,79 @@ class AmoCRMWrapper:
 
         return None
 
+    def find_lead_by_contact_in_pipeline_stage_new(
+            self,
+            contact_id: str,
+            pipeline_id: str,
+            status_id: str,
+            *,
+            with_entities: bool = True
+    ) -> Optional[int]:
+        page = 1
+        limit = 250
+        target_contact_id = int(contact_id)
+        target_pipeline_id = int(pipeline_id)
+        target_status_id = int(status_id)
+
+        while True:
+            query = (
+                f'filter[pipeline_id][]=3616530&'
+                f'filter[statuses][0][pipeline_id]=3616530&'
+                f'filter[statuses][0][status_id]=47244117&'
+                f'with=contacts&'
+                f'limit={limit}&'
+                f'page={page}'
+            )
+
+            response = self._base_request(
+                type="get_param",
+                endpoint="/api/v4/leads",
+                parameters=query,
+            )
+            if response.status_code >= 400:
+                raise RuntimeError(f"amoCRM error {response.status_code}: {response.text}")
+
+            payload = response.json()
+
+            leads = payload.get("_embedded", {}).get("leads", []) or []
+            if not leads:
+                return None
+
+            for lead in leads:
+                if int(lead.get("pipeline_id", -1)) != target_pipeline_id:
+                    continue
+                if int(lead.get("status_id", -1)) != target_status_id:
+                    continue
+
+                lead_contacts = lead.get("_embedded", {}).get("contacts", []) or []
+                if not lead_contacts:
+                    continue
+
+                main_contact = None
+                for lead_contact in lead_contacts:
+                    is_main = lead_contact.get("is_main")
+                    if is_main is True or str(is_main).lower() in {"1", "true"}:
+                        main_contact = lead_contact
+                        break
+
+                if main_contact is None and len(lead_contacts) == 1:
+                    main_contact = lead_contacts[0]
+                if main_contact is None:
+                    continue
+
+                try:
+                    main_contact_id = int(main_contact.get("id", -1))
+                except (TypeError, ValueError):
+                    continue
+
+                if main_contact_id == target_contact_id:
+                    return lead.get("id")
+
+            if not payload.get("_links", {}).get("next"):
+                return None
+
+            page += 1
+
 
 
 
