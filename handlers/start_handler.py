@@ -17,6 +17,10 @@ async def start(message: Message, dialog_manager: DialogManager, command: Comman
     webhook_url = dialog_manager.middleware_data['webhook_url']
     utm_token = dialog_manager.middleware_data['utm_token']
     webhook_id = command.args.strip() if command and command.args else ""
+    if webhook_id:
+        logger.info(f'Пользователь перешёл в бота с webhook_id: {webhook_id}')
+    else:
+        logger.info(f'Пользователь перешёл в бота напрямую, без webhook_id')
 
     utm_data = {
         "utm_source": "",

@@ -14,6 +14,7 @@ class User(Base):
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
     is_admin: Mapped[bool] = mapped_column(Boolean, nullable=True)
     tg_user_id: Mapped[int] = mapped_column(BigInteger, unique=True, index=True)
+    max_user_id: Mapped[int] = mapped_column(BigInteger, unique=True, index=True)
     username: Mapped[str | None] = mapped_column(String(128), nullable=True)
     first_name: Mapped[str | None] = mapped_column(String(128), nullable=True)
     last_name: Mapped[str | None] = mapped_column(String(128), nullable=True)
