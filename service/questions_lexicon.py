@@ -625,8 +625,8 @@ exam_in_message = (
                    "2️⃣ «Ремонт в процессе» — выключатели ещё не установлены, проводку можно сделать самостоятельно."
                    " Можно использовать как беспроводные выключатели, так и реле в щиток.\n\n"
                    "<b>Видеоразбор первых двух задач:</b>\n"
-                   "- смотреть в YouTube <a href='https://www.youtube.com/watch?v=h4mHg50SLw0&feature=youtu.be'>Видеоразбор экзамена</a>)\n"
-                   "- смотреть в ВКонтакте <a href='https://vk.com/video-140176277_456239572?list=ln-gm1mezeOaTN4tEXj4k&clckid=e2a3cc32'>Видеоразбор экзамена</a>\n\n"
+                   "- смотреть в <a href='https://www.youtube.com/watch?v=h4mHg50SLw0&feature=youtu.be'>YouTube</a>)\n"
+                   "- смотреть в <a href='https://vk.com/video-140176277_456239572?list=ln-gm1mezeOaTN4tEXj4k&clckid=e2a3cc32'>ВКонтакте</a>\n\n"
                    "Для перехода в экзамен, нажмите кнопку ниже👇")
 
 
