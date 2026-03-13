@@ -152,9 +152,10 @@ async def _merge_user_by_amo_contact_id(
         .values(user_id=current_user.id)
     )
 
+    pending_max_user_id = None
+
     fields_to_fill = (
         "username",
-        "max_user_id",
         "first_name",
         "last_name",
         "amo_deal_id",
@@ -173,6 +174,9 @@ async def _merge_user_by_amo_contact_id(
         if _is_empty(current_value) and not _is_empty(duplicate_value):
             setattr(current_user, field_name, duplicate_value)
 
+    if _is_empty(current_user.max_user_id) and not _is_empty(duplicate_user.max_user_id):
+        pending_max_user_id = duplicate_user.max_user_id
+
     if duplicate_user.is_admin and not current_user.is_admin:
         current_user.is_admin = True
 
@@ -186,6 +190,9 @@ async def _merge_user_by_amo_contact_id(
 
     await session.delete(duplicate_user)
     await session.flush()
+
+    if pending_max_user_id is not None:
+        current_user.max_user_id = pending_max_user_id
 
 
 async def admin_menu(callback: CallbackQuery, button: Button, dialog_manager: DialogManager):
