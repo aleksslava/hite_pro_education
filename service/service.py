@@ -215,12 +215,7 @@ async def lesson_access(user: User, session: AsyncSession, lesson_key: str) -> b
     for index, lesson in enumerate(lessons):
         if lesson['title'] == lesson_key:
             required_key = lessons[index-1].get('title')
-    # if lesson_key == "lesson_2":
-    #     required_key = "lesson_1"
-    # elif lesson_key == "lesson_3":
-    #     required_key = "lesson_2"
-    # else:
-    #     return True
+
 
     result = await session.execute(
         select(LessonResult.id)
