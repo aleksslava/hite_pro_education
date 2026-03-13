@@ -15,7 +15,7 @@ from fsm_forms.fsm_models import MainDialog, HpFirstLessonDialog, HpSecondLesson
     HpExamLessonDialog
 from aiogram.types import ReplyKeyboardMarkup, KeyboardButton, WebAppInfo
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select
+from sqlalchemy import select, update
 from sqlalchemy.orm import selectinload
 from db.models import User, HpLessonResult as LessonResult
 from amo_api.amo_api import AmoCRMWrapper
@@ -118,6 +118,75 @@ async def send_contact_keyboard(callback: CallbackQuery, _, dialog_manager):
     dialog_manager.dialog_data["contact_kb_msg_id"] = msg.message_id
     # Не отправляем отдельное сообщение окна, т.к. уже отправили сообщение с reply-клавиатурой
     await dialog_manager.switch_to(MainDialog.phone, show_mode=ShowMode.NO_UPDATE)
+
+
+def _is_empty(value):
+    return value is None or (isinstance(value, str) and value == "")
+
+
+async def _merge_user_by_amo_contact_id(
+    session: AsyncSession,
+    current_user: User,
+    amo_contact_id: int,
+) -> None:
+    if current_user.amo_contact_id == amo_contact_id:
+        return
+
+    result = await session.execute(
+        select(User).where(User.amo_contact_id == amo_contact_id, User.id != current_user.id)
+    )
+    duplicate_user = result.scalar_one_or_none()
+    if duplicate_user is None:
+        return
+
+    logger.warning(
+        "Найден дубль пользователя по amo_contact_id=%s: keep user_id=%s, merge user_id=%s",
+        amo_contact_id,
+        current_user.id,
+        duplicate_user.id,
+    )
+
+    await session.execute(
+        update(LessonResult)
+        .where(LessonResult.user_id == duplicate_user.id)
+        .values(user_id=current_user.id)
+    )
+
+    fields_to_fill = (
+        "username",
+        "max_user_id",
+        "first_name",
+        "last_name",
+        "amo_deal_id",
+        "utm_campaign",
+        "utm_medium",
+        "utm_content",
+        "utm_term",
+        "utm_source",
+        "yclid",
+        "client_type",
+        "phone_number",
+    )
+    for field_name in fields_to_fill:
+        current_value = getattr(current_user, field_name)
+        duplicate_value = getattr(duplicate_user, field_name)
+        if _is_empty(current_value) and not _is_empty(duplicate_value):
+            setattr(current_user, field_name, duplicate_value)
+
+    if duplicate_user.is_admin and not current_user.is_admin:
+        current_user.is_admin = True
+
+    if duplicate_user.start_edu and (
+        current_user.start_edu is None or duplicate_user.start_edu < current_user.start_edu
+    ):
+        current_user.start_edu = duplicate_user.start_edu
+
+    if duplicate_user.created_at < current_user.created_at:
+        current_user.created_at = duplicate_user.created_at
+
+    await session.delete(duplicate_user)
+    await session.flush()
+
 
 async def admin_menu(callback: CallbackQuery, button: Button, dialog_manager: DialogManager):
     await dialog_manager.start(AdminDialog.admin_menu)
@@ -474,6 +543,11 @@ async def on_contact(message: Message, _, dialog_manager):
             amo_api.add_tg_to_contact(contact_id=contact_data["amo_contact_id"], tg_id=tg_id, tg_id_field=tg_field_id,
                                       username_id=username_field_id, username=username)
             logger.info('попытка записать данные tg_id')
+        await _merge_user_by_amo_contact_id(
+            session=session,
+            current_user=user,
+            amo_contact_id=contact_data["amo_contact_id"],
+        )
         user.first_name = contact_data["first_name"]
         user.last_name = contact_data["last_name"]
         user.amo_contact_id = contact_data["amo_contact_id"]
@@ -510,6 +584,11 @@ async def on_contact(message: Message, _, dialog_manager):
                                                utm_metriks_fields=utm_metriks,
                                                user=user
                                                )
+        await _merge_user_by_amo_contact_id(
+            session=session,
+            current_user=user,
+            amo_contact_id=new_contact_id,
+        )
         user.amo_deal_id = new_lead_id
         user.amo_contact_id = new_contact_id
         logger.info(f'Для пользователя tg_id: {tg_id}, телефон: {phone_number} создан новый контакт {new_contact_id} и '
