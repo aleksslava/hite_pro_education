@@ -12,7 +12,7 @@ from service.background_notifications.runner import run_inactivity_notifications
 logger = logging.getLogger(__name__)
 
 MOSCOW_TZ = ZoneInfo("Europe/Moscow")
-RUN_HOUR = 16
+RUN_HOUR = 18
 RUN_MINUTE = 0
 
 
@@ -24,7 +24,7 @@ def _seconds_until_next_run(now: datetime) -> float:
         microsecond=0,
     )
     if now > next_run:
-        next_run += timedelta(days=1)
+        next_run += timedelta(minutes=5)
     return max((next_run - now).total_seconds(), 0.0)
 
 

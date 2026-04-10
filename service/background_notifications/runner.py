@@ -4,7 +4,9 @@ import logging
 from datetime import datetime
 
 from aiogram import Bot
+from aiogram.types import FSInputFile, InlineKeyboardButton, InlineKeyboardMarkup
 
+from config.config import BASE_DIR
 from db import async_session_factory
 from service.background_message import get_background_message
 from service.background_notifications.repository import (
@@ -19,6 +21,12 @@ from service.background_notifications.rules import (
 )
 
 logger = logging.getLogger(__name__)
+NOTIFICATION_PHOTO_PATH = BASE_DIR / "media" / "photo" / "notification.png"
+CONTINUE_EDU_KEYBOARD = InlineKeyboardMarkup(
+    inline_keyboard=[
+        [InlineKeyboardButton(text="Продолжить обучение", callback_data="start")],
+    ]
+)
 
 
 def _build_stats() -> dict[str, int]:
@@ -80,7 +88,12 @@ async def run_inactivity_notifications_once(bot: Bot) -> dict[str, int]:
                 try:
                     if user.tg_user_id in [784343277, 365884966]:  # тестовые аккаунты, на которые можно отправлять уведомления
                         if user.tg_user_id is not None:
-                            await bot.send_message(chat_id=user.tg_user_id, text=message)
+                            await bot.send_photo(
+                                chat_id=user.tg_user_id,
+                                photo=FSInputFile(NOTIFICATION_PHOTO_PATH),
+                                caption=message,
+                                reply_markup=CONTINUE_EDU_KEYBOARD,
+                            )
                 except Exception:
                     logger.exception(
                         "Failed to send inactivity message user_id=%s tg_user_id=%s stage=%s",
