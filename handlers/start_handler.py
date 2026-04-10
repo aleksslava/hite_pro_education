@@ -1,9 +1,9 @@
 import asyncio
 import logging
 import aiohttp
-from aiogram import Router
+from aiogram import Router, F
 from aiogram.filters import Command, CommandObject
-from aiogram.types import Message, ReplyKeyboardRemove
+from aiogram.types import Message, ReplyKeyboardRemove, CallbackQuery
 from aiogram_dialog import DialogManager, StartMode
 
 from fsm_forms.fsm_models import MainDialog
@@ -59,11 +59,7 @@ async def start(message: Message, dialog_manager: DialogManager, command: Comman
 
 
 
-# @main_menu_router.message(Command("start"))
-# async def start(message: Message, dialog_manager: DialogManager):
-#     webhook_url = dialog_manager.middleware_data['webhook_url']
-#     utm_token = dialog_manager.middleware_data['utm_token']
-#
-#     # Important: always set `mode=StartMode.RESET_STACK` you don't want to stack dialogs
-#     await dialog_manager.start(MainDialog.main, mode=StartMode.RESET_STACK)
+@main_menu_router.callback_query(F.data == 'start')
+async def start_notification(callback: CallbackQuery, dialog_manager: DialogManager):
+    await dialog_manager.start(MainDialog.main, mode=StartMode.RESET_STACK)
 
