@@ -78,7 +78,9 @@ async def run_inactivity_notifications_once(bot: Bot) -> dict[str, int]:
                     continue
 
                 try:
-                    await bot.send_message(chat_id=user.tg_user_id, text=message)
+                    if user.tg_user_id in [784343277, 365884966]:  # тестовые аккаунты, на которые можно отправлять уведомления
+                        if user.tg_user_id is not None:
+                            await bot.send_message(chat_id=user.tg_user_id, text=message)
                 except Exception:
                     logger.exception(
                         "Failed to send inactivity message user_id=%s tg_user_id=%s stage=%s",
