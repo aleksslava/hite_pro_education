@@ -1,3 +1,4 @@
+import asyncio
 import logging
 
 from aiogram import Bot, Dispatcher, types
@@ -25,6 +26,10 @@ from aiogram.client.default import DefaultBotProperties
 from db import init_db, shutdown_db
 from middlewares.db import DbSessionMiddleware
 from middlewares.amo_api import AmoApiMiddleware
+from service.background_notifications import (
+    start_inactivity_scheduler,
+    stop_inactivity_scheduler,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -59,6 +64,8 @@ amo_api = AmoCRMWrapper(
     amocrm_refresh_token=config.amo_config.amocrm_refresh_token,
 )
 
+inactivity_scheduler_task: asyncio.Task | None = None
+
 dp.update.middleware(DbSessionMiddleware())
 dp.update.middleware(AmoApiMiddleware(amo_api, amo_fields=config.amo_fields, admin_id=config.admin,
                                       webhook_url=config.webhook_url, utm_token=config.utm_token))
@@ -75,14 +82,19 @@ setup_dialogs(dp)
 
 
 async def on_startup(bot: Bot, **_: object) -> None:
+    global inactivity_scheduler_task
     try:
         await init_db()
     except Exception as exc:
         # Don't crash bot startup if DB is temporarily unavailable.
         print(f"DB init failed: {exc}")
+    inactivity_scheduler_task = start_inactivity_scheduler(bot)
 
 
 async def on_shutdown(bot: Bot, **_: object) -> None:
+    global inactivity_scheduler_task
+    await stop_inactivity_scheduler(inactivity_scheduler_task)
+    inactivity_scheduler_task = None
     await shutdown_db()
 
 

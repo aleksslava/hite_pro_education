@@ -177,6 +177,14 @@ async def _merge_user_by_amo_contact_id(
     if _is_empty(current_user.max_user_id) and not _is_empty(duplicate_user.max_user_id):
         pending_max_user_id = duplicate_user.max_user_id
 
+    if current_user.notification_stage is None and duplicate_user.notification_stage is not None:
+        current_user.notification_stage = duplicate_user.notification_stage
+    elif current_user.notification_stage is not None and duplicate_user.notification_stage is not None:
+        current_user.notification_stage = max(
+            current_user.notification_stage,
+            duplicate_user.notification_stage,
+        )
+
     if duplicate_user.is_admin and not current_user.is_admin:
         current_user.is_admin = True
 

@@ -30,6 +30,7 @@ class User(Base):
     phone_number: Mapped[str | None] = mapped_column(String(32), nullable=True)
     start_edu: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    notification_stage: Mapped[int | None] = mapped_column(Integer, nullable=True, default=None)
 
     lesson_results: Mapped[list["HpLessonResult"]] = relationship(
         back_populates="user",
