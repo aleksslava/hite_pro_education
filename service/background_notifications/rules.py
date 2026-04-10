@@ -16,13 +16,13 @@ def resolve_activity_at(
 
 
 def resolve_target_stage(elapsed_timedelta: timedelta) -> int:
-    if elapsed_timedelta < timedelta(days=2):
+    if elapsed_timedelta < timedelta(days=1):
         return 0
-    if elapsed_timedelta < timedelta(days=5):
+    if elapsed_timedelta < timedelta(days=2):
         return 1
-    if elapsed_timedelta < timedelta(days=10):
+    if elapsed_timedelta < timedelta(days=3):
         return 2
-    if elapsed_timedelta < timedelta(days=20):
+    if elapsed_timedelta < timedelta(days=4):
         return 3
     return 4
 
