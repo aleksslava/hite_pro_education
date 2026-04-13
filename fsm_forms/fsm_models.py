@@ -4,7 +4,6 @@ from aiogram.filters.state import StatesGroup, State
 
 class MainDialog(StatesGroup):
     main = State()
-    # keyway_lessons = State()
     phone = State()
     process_edu = State()
 

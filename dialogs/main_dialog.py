@@ -21,7 +21,7 @@ from db.models import User, HpLessonResult as LessonResult
 from amo_api.amo_api import AmoCRMWrapper
 from aiogram.utils.chat_action import ChatActionSender
 
-from service.questions_lexicon import welcome_message, exam_in_message
+from service.questions_lexicon import welcome_message, exam_in_message, start_message
 from service.service import get_lessons_buttons, lesson_access, check_push_to_new_status
 
 logger = logging.getLogger(__name__)
@@ -620,6 +620,7 @@ async def on_contact(message: Message, _, dialog_manager):
         logger.info(f'Не получилось переместить сделку id: {user.amo_deal_id} дальше по воронке')
 
     await message.answer("Спасибо! Номер получен ✅", reply_markup=ReplyKeyboardRemove())
+    await message.answer(text=start_message, reply_markup=ReplyKeyboardRemove())
     dialog_manager.dialog_data.update(user_authorized=True, button_to_authorized=False)
     await dialog_manager.switch_to(MainDialog.main)
 
