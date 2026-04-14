@@ -149,6 +149,19 @@ async def delete_user_input(message: Message, _, dialog_manager: DialogManager):
     await dialog_manager.switch_to(AdminDialog.admin_menu)
 
 
+async def delete_notification(callback: CallbackQuery, button: Button, dialog_manager: DialogManager):
+    session: AsyncSession = dialog_manager.middleware_data["session"]
+    result = await session.execute(select(User))
+    users = result.scalars().all()
+
+    for user in users:
+        user.notification_stage = None
+
+    await session.commit()
+
+    await callback.message.answer(f"Обработано записей: {len(users)}")
+
+
 async def get_converse(callback: CallbackQuery, button: Button, dialog_manager: DialogManager):
     session: AsyncSession = dialog_manager.middleware_data["session"]
 
@@ -170,6 +183,8 @@ async def get_converse(callback: CallbackQuery, button: Button, dialog_manager: 
     headers = [
         "user_id",
         "tg_id",
+        "max_user_id",
+        "notification_stage",
         "username",
         "first_name",
         "last_name",
@@ -190,19 +205,27 @@ async def get_converse(callback: CallbackQuery, button: Button, dialog_manager: 
             return ""
         return value.strftime("%Y-%m-%d %H:%M:%S")
 
+    def nullable(value):
+        return value if value is not None else ""
+
     for user in users:
-        lessons = sorted(user.lesson_results or [], key=lambda l: l.id or 0)
+        lessons = sorted(
+            [lesson for lesson in (user.lesson_results or []) if lesson.completed_at is not None],
+            key=lambda l: l.id or 0,
+        )
         if not lessons:
             ws.append(
                 [
                     user.id,
-                    user.tg_user_id,
+                    nullable(user.tg_user_id),
+                    nullable(user.max_user_id),
+                    nullable(user.notification_stage),
                     user.username or "",
                     user.first_name or "",
                     user.last_name or "",
                     user.phone_number or "",
-                    user.amo_contact_id or "",
-                    user.amo_deal_id or "",
+                    nullable(user.amo_contact_id),
+                    nullable(user.amo_deal_id),
                     "",
                     "",
                     "",
@@ -217,13 +240,15 @@ async def get_converse(callback: CallbackQuery, button: Button, dialog_manager: 
             ws.append(
                 [
                     user.id,
-                    user.tg_user_id,
+                    nullable(user.tg_user_id),
+                    nullable(user.max_user_id),
+                    nullable(user.notification_stage),
                     user.username or "",
                     user.first_name or "",
                     user.last_name or "",
                     user.phone_number or "",
-                    user.amo_contact_id or "",
-                    user.amo_deal_id or "",
+                    nullable(user.amo_contact_id),
+                    nullable(user.amo_deal_id),
                     lesson.id,
                     lesson.lesson_key,
                     lesson.score if lesson.score is not None else "",
@@ -267,6 +292,10 @@ Const('Выберите нужный пункт меню'),
             Button(Const("Получить таблицу пользователей и результатов"),
                    id="4",
                    on_click=get_converse,
+                   ),
+            Button(Const("Очистить поле этапа уведомлений"),
+                   id="5",
+                   on_click=delete_notification,
                    ),
         ),
         Row(
