@@ -140,7 +140,7 @@ result_row_button: Row = Row(
 
 vebinar_1 = Window(
     Const(text="<b>Запись второго второго урока HiTE PRO!</b>\n"
-               "Не грузится видео? Посмотри по ссылке: <a href='https://drive.google.com/file/d/1YlOt7Te4dcwXGp65H3IBLajs4rj_DtYL/view?usp=sharing'>Урок 2</a>"),
+               "Не грузится видео? Посмотри по ссылке: <a href='https://peertube.hite-pro.ru/w/8Cfjs5SDVFffyKFbzVphTR'>Урок 2</a>"),
     StaticMedia(
         path=BASE_DIR / "media" / "video" / "hp_lesson_2.mp4",
         type=ContentType.VIDEO,
