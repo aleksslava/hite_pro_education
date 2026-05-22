@@ -624,7 +624,13 @@ async def on_contact(message: Message, _, dialog_manager):
     await message.answer("Спасибо! Номер получен ✅", reply_markup=ReplyKeyboardRemove())
     # await message.answer(text=start_message, reply_markup=ReplyKeyboardRemove())
     dialog_manager.dialog_data.update(user_authorized=True, button_to_authorized=False)
-    await dialog_manager.switch_to(MainDialog.start)
+    async with ChatActionSender.upload_video(
+            bot=dialog_manager.middleware_data['bot'],
+            chat_id=message.chat.id,
+            interval=4.0,
+            initial_sleep=0.0,
+    ):
+        await dialog_manager.switch_to(MainDialog.start)
 
 
 start_window = Window(
