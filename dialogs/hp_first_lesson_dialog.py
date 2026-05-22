@@ -58,7 +58,7 @@ async def question_answers(dialog_manager: DialogManager, **kwargs):
 
 # Сообщение с вебинаром первого урока Keyway
 vebinar = Window(
-    Const(text="<b>Запись первого урока Hite PRO!</b>\n"
+    Const(text="<b>Запись первого урока HiTE PRO!</b>\n"
                "Не грузится видео? Посмотри по ссылке: <a href='https://peertube.hite-pro.ru/w/4sNqnxzvRFxmTArqWuXSuC'>Урок 1</a>"),
     StaticMedia(
         path=BASE_DIR / "media" / "video" / "hp_lesson_1.mp4",

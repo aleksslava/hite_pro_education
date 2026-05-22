@@ -3,6 +3,7 @@ from aiogram.filters.state import StatesGroup, State
 
 
 class MainDialog(StatesGroup):
+    start = State()
     main = State()
     phone = State()
     process_edu = State()

@@ -6,10 +6,12 @@ from aiogram.enums import ContentType, ParseMode
 from aiogram.types import CallbackQuery, Message, ReplyKeyboardRemove
 from aiogram_dialog.widgets.input import MessageInput
 from aiogram_dialog.widgets.kbd import Button, Column, Back, SwitchTo
+from aiogram_dialog.widgets.media import StaticMedia
 from aiogram_dialog.widgets.text import Const, Format
 from aiogram_dialog import Dialog, Window, DialogManager, StartMode, ShowMode
 
 from amo_api.amo_service import processing_contact, processing_lead
+from config.config import BASE_DIR
 from fsm_forms.fsm_models import MainDialog, HpFirstLessonDialog, HpSecondLessonDialog, HpThirdLessonDialog, \
     AdminDialog, HpFourthLessonDialog, HpFifthLessonDialog, HpSixthLessonDialog, HpSeventhLessonDialog, \
     HpExamLessonDialog
@@ -620,9 +622,31 @@ async def on_contact(message: Message, _, dialog_manager):
         logger.info(f'Не получилось переместить сделку id: {user.amo_deal_id} дальше по воронке')
 
     await message.answer("Спасибо! Номер получен ✅", reply_markup=ReplyKeyboardRemove())
-    await message.answer(text=start_message, reply_markup=ReplyKeyboardRemove())
+    # await message.answer(text=start_message, reply_markup=ReplyKeyboardRemove())
     dialog_manager.dialog_data.update(user_authorized=True, button_to_authorized=False)
-    await dialog_manager.switch_to(MainDialog.main)
+    await dialog_manager.switch_to(MainDialog.start)
+
+
+start_window = Window(
+Const(
+    text="<b>Первый шаг – посмотрите видеопрезентацию</b>\n\n"
+         "Прежде чем мы перейдём к обучению — посмотрите презентацию от основателя HiTE PRO Анатолия Кайибханова.\n\n"
+         "Он расскажет, самое главное о беспроводных технологиях HiTE PRO — и конечно, сколько на этом зарабатывают партнёры.\n\n"
+         "Это задаст правильный настрой для всего, что будет дальше 🚀\n\n"
+         "Если видео не загружается, смотрите его <a href='https://peertube.hite-pro.ru/w/4sNqnxzvRFxmTArqWuXSuC'>здесь</a>"),
+    StaticMedia(
+        path=BASE_DIR / "media" / "video" / "present.mp4",
+        type=ContentType.VIDEO,
+        media_params={"supports_streaming": True,
+                      "width": 1920,
+                      "height": 1080,
+                      },
+    ),
+    SwitchTo(Const('Готов двигаться дальше'), id='go_next_dialog', show_mode=ShowMode.SEND, state=MainDialog.main),
+    state=MainDialog.start,
+)
+
+
 
 phone = Window(
         Const("Отправь контакт кнопкой на клавиатуре ниже."),
@@ -698,4 +722,4 @@ process_edu_message = Window(
     state=MainDialog.process_edu,
 )
 
-main_menu_dialog = Dialog(main_window, process_edu_message, phone)
+main_menu_dialog = Dialog(start_window, main_window, process_edu_message, phone)
