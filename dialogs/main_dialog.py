@@ -27,7 +27,7 @@ from service.questions_lexicon import welcome_message, exam_in_message, start_me
 from service.service import get_lessons_buttons, lesson_access, check_push_to_new_status
 
 logger = logging.getLogger(__name__)
-EXAM_WEBAPP_URL = "https://aleksslava.github.io/exam_edu.github.io/"
+EXAM_WEBAPP_URL = "https://profi-shop.hite-pro.ru/landing/"
 
 
 def _resolve_event_user(dialog_manager: DialogManager):
