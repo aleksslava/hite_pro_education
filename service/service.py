@@ -256,7 +256,9 @@ async def check_push_to_new_status(lesson_key: str, lead_status: int) -> bool:
         {'key': 'compleat_exam',
          'id': 41608800},
         {'key': 'compleat_training',
-         'id': 35440800}
+         'id': 35440800},
+        {'key': 'partner',
+         'id': 142}
         ]
     lesson_index = 0
     lead_index = 0
