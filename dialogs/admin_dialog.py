@@ -18,7 +18,7 @@ from service.service import pad_right, format_results, format_progress, checking
 from db.models import User, HpLessonResult as LessonResult
 from amo_api.amo_api import AmoCRMWrapper
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select
+from sqlalchemy import select, func
 from sqlalchemy.orm import selectinload
 from openpyxl import Workbook
 
@@ -273,6 +273,99 @@ async def get_converse(callback: CallbackQuery, button: Button, dialog_manager: 
         if tmp_path and os.path.exists(tmp_path):
             os.remove(tmp_path)
 
+
+async def get_employment_type(callback: CallbackQuery, button: Button, dialog_manager: DialogManager):
+    session: AsyncSession = dialog_manager.middleware_data["session"]
+
+    completed_lessons = (
+        select(
+            LessonResult.user_id,
+            func.count(LessonResult.id).label("completed_lessons_count"),
+        )
+        .where(LessonResult.compleat.is_(True))
+        .group_by(LessonResult.user_id)
+        .subquery()
+    )
+
+    result = await session.execute(
+        select(
+            User,
+            func.coalesce(completed_lessons.c.completed_lessons_count, 0),
+        )
+        .outerjoin(completed_lessons, completed_lessons.c.user_id == User.id)
+        .where(
+            User.client_type.is_not(None),
+            User.client_type != "",
+        )
+        .order_by(User.id)
+    )
+    users = result.all()
+
+    if not users:
+        await callback.message.answer("Пользователи с заполненным типом занятости не найдены.")
+        return
+
+    wb = Workbook()
+    ws = wb.active
+    ws.title = "employment_type"
+
+    ws.append(
+        [
+            "ID в ТГ",
+            "ID в MAX",
+            "Кто вы?",
+            "Дата создания",
+            "Ссылка на контакт",
+            "Ссылка на сделку",
+            "Пройдено уроков",
+        ]
+    )
+
+    def fmt_dt(value: datetime.datetime | None) -> str:
+        if value is None:
+            return ""
+        return value.strftime("%Y-%m-%d %H:%M:%S")
+
+    def nullable(value):
+        return value if value is not None else ""
+
+    for user, completed_lessons_count in users:
+        contact_link = ""
+        if user.amo_contact_id is not None:
+            contact_link = f"https://hite.amocrm.ru/contacts/detail/{user.amo_contact_id}"
+
+        deal_link = ""
+        if user.amo_deal_id is not None:
+            deal_link = f"https://hite.amocrm.ru/leads/detail/{user.amo_deal_id}"
+
+        ws.append(
+            [
+                nullable(user.tg_user_id),
+                nullable(user.max_user_id),
+                user.client_type or "",
+                fmt_dt(user.created_at),
+                contact_link,
+                deal_link,
+                completed_lessons_count,
+            ]
+        )
+
+    filename = f"employment_type_{datetime.datetime.utcnow():%Y%m%d_%H%M%S}.xlsx"
+    tmp_path = None
+    try:
+        with tempfile.NamedTemporaryFile(delete=False, suffix=".xlsx") as tmp:
+            tmp_path = tmp.name
+        wb.save(tmp_path)
+
+        await callback.message.answer_document(
+            document=FSInputFile(tmp_path, filename=filename),
+            caption="Тип занятости",
+        )
+    finally:
+        if tmp_path and os.path.exists(tmp_path):
+            os.remove(tmp_path)
+
+
 admin_menu = Window(
 Const('Выберите нужный пункт меню'),
     Group(
@@ -292,6 +385,10 @@ Const('Выберите нужный пункт меню'),
             Button(Const("Получить таблицу пользователей и результатов"),
                    id="4",
                    on_click=get_converse,
+                   ),
+            Button(Const("Тип занятости"),
+                   id="employment_type",
+                   on_click=get_employment_type,
                    ),
             Button(Const("Очистить поле этапа уведомлений"),
                    id="5",

@@ -5,7 +5,7 @@ from aiogram import F
 from aiogram.enums import ContentType, ParseMode
 from aiogram.types import CallbackQuery, Message, ReplyKeyboardRemove
 from aiogram_dialog.widgets.input import MessageInput
-from aiogram_dialog.widgets.kbd import Button, Column, Back, SwitchTo
+from aiogram_dialog.widgets.kbd import Button, Column, Back, SwitchTo, Select
 from aiogram_dialog.widgets.media import StaticMedia
 from aiogram_dialog.widgets.text import Const, Format
 from aiogram_dialog import Dialog, Window, DialogManager, StartMode, ShowMode
@@ -23,7 +23,7 @@ from db.models import User, HpLessonResult as LessonResult
 from amo_api.amo_api import AmoCRMWrapper
 from aiogram.utils.chat_action import ChatActionSender
 
-from service.questions_lexicon import welcome_message, exam_in_message, start_message
+from service.questions_lexicon import welcome_message, exam_in_message, start_message, who_are_you
 from service.service import get_lessons_buttons, lesson_access, check_push_to_new_status
 
 logger = logging.getLogger(__name__)
@@ -102,10 +102,18 @@ async def main_menu_getter(dialog_manager: DialogManager, **kwargs):
         await session.commit()
         await session.refresh(user)
 
+    needs_client_type = user.client_type is None or user.client_type == ""
+    if needs_client_type:
+        user_authorized = False
+        button_to_authorized = False
+
     return {'user_authorized': user_authorized,
             'button_to_authorized': button_to_authorized,
-            'is_admin': user.is_admin,
-            'lessons_text': lessons_text}
+            'is_admin': user.is_admin and not needs_client_type,
+            'lessons_text': lessons_text,
+            'needs_client_type': needs_client_type,
+            'client_type_message': who_are_you["message"],
+            'client_type_buttons': list(who_are_you["buttons"].items())}
 
 
 async def send_contact_keyboard(callback: CallbackQuery, _, dialog_manager):
@@ -120,6 +128,25 @@ async def send_contact_keyboard(callback: CallbackQuery, _, dialog_manager):
     dialog_manager.dialog_data["contact_kb_msg_id"] = msg.message_id
     # Не отправляем отдельное сообщение окна, т.к. уже отправили сообщение с reply-клавиатурой
     await dialog_manager.switch_to(MainDialog.phone, show_mode=ShowMode.NO_UPDATE)
+
+
+async def select_client_type(
+    callback: CallbackQuery,
+    widget: Select,
+    dialog_manager: DialogManager,
+    client_type: str,
+):
+    session: AsyncSession = dialog_manager.middleware_data['session']
+    tg_id = callback.from_user.id
+    result = await session.execute(select(User).where(User.tg_user_id == tg_id))
+    user = result.scalar_one_or_none()
+    if user is None:
+        raise ValueError(f'Пользователь не найден при выборе client_type, tg_id: {tg_id}')
+
+    user.client_type = client_type
+    await session.commit()
+    await callback.answer()
+    await dialog_manager.show()
 
 
 def _is_empty(value):
@@ -483,6 +510,17 @@ async def exam_lesson_start(callback: CallbackQuery, button: Button, dialog_mana
 
 # Стартовое меню бота
 main_window = Window(
+    Format("{client_type_message}", when="needs_client_type"),
+    Column(
+        Select(
+            Format("{item[1]}"),
+            id="client_type",
+            item_id_getter=lambda item: item[0],
+            items="client_type_buttons",
+            on_click=select_client_type,
+        ),
+        when="needs_client_type",
+    ),
     Const(welcome_message, when="user_authorized"),
     Const("Для доступа к обучению, нажмите на кнопку авторизоваться и поделитесь номером телефона!",
           when="button_to_authorized"),
