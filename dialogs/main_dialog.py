@@ -143,7 +143,7 @@ async def select_client_type(
     if user is None:
         raise ValueError(f'Пользователь не найден при выборе client_type, tg_id: {tg_id}')
 
-    user.client_type = who_are_you["buttons"].get(client_type, client_type)
+    user.client_type = who_are_you["buttons"].get(client_type, client_type)[2:]
     await session.commit()
     await callback.answer()
     await dialog_manager.show()
