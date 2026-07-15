@@ -28,24 +28,57 @@
         return output;
     };
 
+    const sanitizeMaxHtml = (source) => {
+        const telegram = sanitizeTelegramHtml(source);
+        const output = document.createDocumentFragment();
+        const copy = (node, target) => {
+            if (node.nodeType === Node.TEXT_NODE) { target.appendChild(document.createTextNode(node.textContent)); return; }
+            if (node.nodeType !== Node.ELEMENT_NODE) return;
+            const original = node.tagName.toLowerCase();
+            if (original === 'tg-spoiler' || original === 'span') {
+                node.childNodes.forEach((child) => copy(child, target)); return;
+            }
+            const tag = original === 'strike' ? 's' : original;
+            const maxTags = new Set(['b','strong','i','em','u','ins','s','del','a','code','pre','blockquote']);
+            if (!maxTags.has(tag)) { node.childNodes.forEach((child) => copy(child, target)); return; }
+            if (tag === 'a') {
+                const href = node.getAttribute('href') || '';
+                if (!safeUrl(href) || href.startsWith('tg:')) {
+                    node.childNodes.forEach((child) => copy(child, target)); return;
+                }
+            }
+            const clean = document.createElement(tag);
+            if (tag === 'a') clean.setAttribute('href', node.getAttribute('href'));
+            node.childNodes.forEach((child) => copy(child, clean));
+            target.appendChild(clean);
+        };
+        telegram.childNodes.forEach((node) => copy(node, output));
+        return output;
+    };
+
     const composer = document.querySelector('[data-composer]');
     if (composer) {
         const message = composer.querySelector('[data-message-input]');
         const media = composer.querySelector('[data-media-input]');
-        const preview = composer.querySelector('[data-message-preview]');
-        const mediaPreview = composer.querySelector('[data-media-preview]');
+        const messagePreviews = composer.querySelectorAll('[data-message-preview]');
+        const mediaPreviews = composer.querySelectorAll('[data-media-preview]');
         const counter = composer.querySelector('[data-character-count]');
         const limit = composer.querySelector('[data-character-limit]');
         const buttonsList = composer.querySelector('[data-buttons-list]');
         const buttonTemplate = composer.querySelector('[data-button-template]');
-        const buttonsPreview = composer.querySelector('[data-buttons-preview]');
+        const buttonsPreviews = composer.querySelectorAll('[data-buttons-preview]');
+        const channelInputs = Object.fromEntries([...composer.querySelectorAll('[data-channel-input]')].map((input) => [input.dataset.channelInput, input]));
+        const previewTabs = composer.querySelectorAll('[data-preview-tab]');
+        const channelPreviews = composer.querySelectorAll('[data-channel-preview]');
 
         const updateButtons = () => {
-            buttonsPreview.replaceChildren();
+            buttonsPreviews.forEach((preview) => preview.replaceChildren());
             buttonsList.querySelectorAll('.button-row').forEach((row) => {
                 const text = row.querySelector('[name="button_text"]').value.trim();
                 if (!text) return;
-                const item = document.createElement('span'); item.className = 'telegram-button'; item.textContent = text; buttonsPreview.appendChild(item);
+                buttonsPreviews.forEach((preview) => {
+                    const item = document.createElement('span'); item.className = 'telegram-button'; item.textContent = text; preview.appendChild(item);
+                });
             });
         };
         const addButton = () => {
@@ -61,24 +94,49 @@
 
         const updatePreview = () => {
             const source = (message.value || 'Текст сообщения появится здесь.').replaceAll('[Имя]', 'Анна');
-            const clean = sanitizeTelegramHtml(source);
-            const textProbe = document.createElement('div'); textProbe.appendChild(clean.cloneNode(true));
-            preview.replaceChildren(clean);
+            const textProbe = document.createElement('div'); textProbe.appendChild(sanitizeTelegramHtml(source).cloneNode(true));
+            messagePreviews.forEach((preview) => {
+                const platform = preview.closest('[data-channel-preview]').dataset.channelPreview;
+                preview.replaceChildren(platform === 'max' ? sanitizeMaxHtml(source) : sanitizeTelegramHtml(source));
+            });
             counter.textContent = textProbe.textContent.length.toLocaleString('ru-RU');
-            const max = media.files.length ? 1024 : 4096;
+            const limits = [];
+            if (channelInputs.telegram && channelInputs.telegram.checked) limits.push(media.files.length ? 1024 : 4096);
+            if (channelInputs.max && channelInputs.max.checked) limits.push(4000);
+            const max = limits.length ? Math.min(...limits) : (media.files.length ? 1024 : 4096);
             limit.textContent = max.toLocaleString('ru-RU');
             counter.parentElement.classList.toggle('limit-warning', textProbe.textContent.length > max);
         };
         message.addEventListener('input', updatePreview);
         media.addEventListener('change', () => {
-            mediaPreview.replaceChildren();
+            mediaPreviews.forEach((preview) => preview.replaceChildren());
             const file = media.files[0];
             if (file) {
-                const node = file.type.startsWith('video/') ? document.createElement('video') : document.createElement('img');
-                node.src = URL.createObjectURL(file); if (node.tagName === 'VIDEO') node.controls = true; mediaPreview.appendChild(node);
+                mediaPreviews.forEach((preview) => {
+                    const node = file.type.startsWith('video/') ? document.createElement('video') : document.createElement('img');
+                    node.src = URL.createObjectURL(file); if (node.tagName === 'VIDEO') node.controls = true; preview.appendChild(node);
+                });
             }
             updatePreview();
         });
+        const selectPreview = (platform) => {
+            previewTabs.forEach((tab) => tab.classList.toggle('active', tab.dataset.previewTab === platform));
+            channelPreviews.forEach((preview) => preview.classList.toggle('active', preview.dataset.channelPreview === platform));
+        };
+        const updateChannels = () => {
+            previewTabs.forEach((tab) => {
+                const input = channelInputs[tab.dataset.previewTab];
+                tab.disabled = !input || !input.checked;
+            });
+            const active = composer.querySelector('[data-preview-tab].active');
+            if (!active || active.disabled) {
+                const available = [...previewTabs].find((tab) => !tab.disabled);
+                if (available) selectPreview(available.dataset.previewTab);
+            }
+            updatePreview();
+        };
+        previewTabs.forEach((tab) => tab.addEventListener('click', () => selectPreview(tab.dataset.previewTab)));
+        Object.values(channelInputs).forEach((input) => input.addEventListener('change', updateChannels));
         composer.querySelectorAll('[data-tag]').forEach((button) => button.addEventListener('click', () => {
             const tag = button.dataset.tag; const start = message.selectionStart; const end = message.selectionEnd;
             const selected = message.value.slice(start, end) || 'текст';
@@ -88,8 +146,16 @@
             const start = message.selectionStart; const end = message.selectionEnd; const selected = message.value.slice(start, end) || 'ссылка';
             message.setRangeText(`<a href="https://example.ru">${selected}</a>`, start, end, 'select'); message.dispatchEvent(new Event('input'));
         });
-        updatePreview();
+        updateChannels();
     }
+
+    const staticTabs = document.querySelectorAll('[data-static-preview-tab]');
+    staticTabs.forEach((tab) => tab.addEventListener('click', () => {
+        staticTabs.forEach((item) => item.classList.toggle('active', item === tab));
+        document.querySelectorAll('[data-static-channel-preview]').forEach((preview) => {
+            preview.classList.toggle('active', preview.dataset.staticChannelPreview === tab.dataset.staticPreviewTab);
+        });
+    }));
 
     document.querySelectorAll('[data-confirm]').forEach((form) => form.addEventListener('submit', (event) => {
         if (!window.confirm(form.dataset.confirm)) event.preventDefault();
@@ -108,6 +174,13 @@
                 progress.querySelector('[data-field="errors"]').textContent = data.error_count;
                 progress.querySelector('[data-field="skipped"]').textContent = data.skipped_count;
                 progress.querySelector('[data-field="progress-bar"]').style.width = `${data.progress}%`;
+                Object.entries(data.platforms || {}).forEach(([platform, values]) => {
+                    const fields = {processed: values.processed_count, success: values.success_count, errors: values.error_count};
+                    Object.entries(fields).forEach(([field, value]) => {
+                        const node = document.querySelector(`[data-platform="${platform}"][data-platform-field="${field}"]`);
+                        if (node) node.textContent = value;
+                    });
+                });
                 if (['completed','completed_with_errors','cancelled','failed'].includes(data.status)) { window.setTimeout(() => window.location.reload(), 500); return; }
                 window.setTimeout(poll, 1500);
             } catch (_) { window.setTimeout(poll, 3000); }

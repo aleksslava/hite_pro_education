@@ -3,7 +3,7 @@ from __future__ import annotations
 from datetime import datetime, timezone
 from typing import Any
 
-from sqlalchemy import delete, func, select, update
+from sqlalchemy import func, select, update
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 from sqlalchemy.orm import selectinload
 
@@ -25,7 +25,8 @@ class BroadcastRepository:
         scheduled_at: datetime,
         recipients: list[dict[str, Any]],
         buttons: list[dict[str, str]],
-        stats: dict[str, int],
+        stats: dict[str, Any],
+        targets: set[str],
     ) -> int:
         async with self.session_factory() as session:
             broadcast = Broadcast(
@@ -42,8 +43,8 @@ class BroadcastRepository:
                 skipped_count=stats["skipped"],
                 duplicate_count=stats["duplicates"],
                 invalid_count=stats["invalid"],
-                send_telegram=True,
-                send_max=False,
+                send_telegram="telegram" in targets,
+                send_max="max" in targets,
             )
             session.add(broadcast)
             await session.flush()
@@ -66,15 +67,16 @@ class BroadcastRepository:
                 )
                 session.add(recipient)
                 await session.flush()
-                session.add(BroadcastDelivery(
-                    broadcast_id=broadcast.id,
-                    recipient_id=recipient.id,
-                    platform="telegram",
-                    target_id=item["telegram_id"],
-                    raw_target_id=item["raw_telegram_id"],
-                    status=item["status"],
-                    error=item["error"],
-                ))
+                for platform, delivery in item["deliveries"].items():
+                    session.add(BroadcastDelivery(
+                        broadcast_id=broadcast.id,
+                        recipient_id=recipient.id,
+                        platform=platform,
+                        target_id=delivery["target_id"],
+                        raw_target_id=delivery["raw_target_id"],
+                        status=delivery["status"],
+                        error=delivery["error"],
+                    ))
             await session.commit()
             return broadcast.id
 
@@ -201,6 +203,80 @@ class BroadcastRepository:
                 .order_by(BroadcastDelivery.id)
             )
             return list(result.scalars().all())
+
+    async def platform_stats(self, broadcast_id: int) -> dict[str, dict[str, int]]:
+        result_stats = {
+            platform: {
+                "valid_count": 0,
+                "processed_count": 0,
+                "success_count": 0,
+                "error_count": 0,
+                "skipped_count": 0,
+            }
+            for platform in ("telegram", "max")
+        }
+        async with self.session_factory() as session:
+            result = await session.execute(
+                select(
+                    BroadcastDelivery.platform,
+                    BroadcastDelivery.status,
+                    func.count(BroadcastDelivery.id),
+                )
+                .where(BroadcastDelivery.broadcast_id == broadcast_id)
+                .group_by(BroadcastDelivery.platform, BroadcastDelivery.status)
+            )
+            for platform, status, count in result.all():
+                if platform not in result_stats:
+                    continue
+                count = int(count)
+                if status != "skipped":
+                    result_stats[platform]["valid_count"] += count
+                if status == "success":
+                    result_stats[platform]["success_count"] += count
+                    result_stats[platform]["processed_count"] += count
+                elif status in {"error", "unknown"}:
+                    result_stats[platform]["error_count"] += count
+                    result_stats[platform]["processed_count"] += count
+                elif status == "skipped":
+                    result_stats[platform]["skipped_count"] += count
+        return result_stats
+
+    async def set_max_media(self, broadcast_id: int, *, media_type: str, token: str) -> None:
+        async with self.session_factory() as session:
+            await session.execute(
+                update(Broadcast)
+                .where(Broadcast.id == broadcast_id)
+                .values(max_media_type=media_type, max_media_token=token)
+            )
+            await session.commit()
+
+    async def clear_max_media(self, broadcast_id: int) -> None:
+        async with self.session_factory() as session:
+            await session.execute(
+                update(Broadcast)
+                .where(Broadcast.id == broadcast_id)
+                .values(max_media_type=None, max_media_token=None)
+            )
+            await session.commit()
+
+    async def fail_pending_platform(self, broadcast_id: int, platform: str, error: str) -> int:
+        async with self.session_factory() as session:
+            result = await session.execute(
+                update(BroadcastDelivery)
+                .where(
+                    BroadcastDelivery.broadcast_id == broadcast_id,
+                    BroadcastDelivery.platform == platform,
+                    BroadcastDelivery.status == "pending",
+                )
+                .values(status="error", error=error, finished_at=datetime.now(timezone.utc))
+            )
+            count = int(result.rowcount or 0)
+            broadcast = await session.get(Broadcast, broadcast_id)
+            if broadcast is not None and count:
+                broadcast.error_count += count
+                broadcast.last_error = error
+            await session.commit()
+            return count
 
     async def mark_sending(self, delivery_id: int) -> bool:
         async with self.session_factory() as session:

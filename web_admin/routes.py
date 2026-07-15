@@ -21,8 +21,10 @@ from web_admin.validation import (
     MAX_XLSX_SIZE,
     TELEGRAM_CAPTION_LIMIT,
     TELEGRAM_TEXT_LIMIT,
+    MAX_TEXT_LIMIT,
     UploadValidationError,
     parse_recipients,
+    adapt_telegram_html_for_max,
     render_message,
     validate_buttons,
     validate_telegram_html,
@@ -159,7 +161,12 @@ def create_admin_router(prefix: str) -> APIRouter:
         return templates.TemplateResponse(
             request=request,
             name="new.html",
-            context=context(request, error=None, values={}, max_enabled=False),
+            context=context(
+                request,
+                error=None,
+                values={"send_telegram": True, "send_max": request.app.state.admin_config.max_enabled},
+                max_enabled=request.app.state.admin_config.max_enabled,
+            ),
         )
 
     @router.post("/preview", response_class=HTMLResponse)
@@ -175,6 +182,19 @@ def create_admin_router(prefix: str) -> APIRouter:
         values = {"message": message, "scheduled_at": scheduled_at}
         media_path: Path | None = None
         try:
+            targets: set[str] = set()
+            if form.get("send_telegram"):
+                targets.add("telegram")
+            if form.get("send_max"):
+                if not request.app.state.admin_config.max_enabled:
+                    raise UploadValidationError("Интеграция MAX не настроена.")
+                targets.add("max")
+            if not targets:
+                raise UploadValidationError("Выберите хотя бы один канал отправки.")
+            values.update(
+                send_telegram="telegram" in targets,
+                send_max="max" in targets,
+            )
             buttons = validate_buttons([
                 {"text": button_texts[index] if index < len(button_texts) else "", "action_key": action}
                 for index, action in enumerate(button_actions)
@@ -204,11 +224,20 @@ def create_admin_router(prefix: str) -> APIRouter:
                     label = "10 МБ" if media_kind == "photo" else "50 МБ"
                     raise UploadValidationError(f"Медиафайл должен быть не больше {label}.")
 
-            text_limit = TELEGRAM_CAPTION_LIMIT if media_kind else TELEGRAM_TEXT_LIMIT
-            validate_telegram_html(message, limit=text_limit)
+            telegram_limit = TELEGRAM_CAPTION_LIMIT if media_kind else TELEGRAM_TEXT_LIMIT
+            validate_telegram_html(
+                message,
+                limit=telegram_limit if "telegram" in targets else None,
+            )
+            if "max" in targets:
+                adapt_telegram_html_for_max(message, limit=MAX_TEXT_LIMIT)
             excel_content = await recipients_file.read(MAX_XLSX_SIZE + 1)
             recipients, stats = await asyncio.to_thread(
-                parse_recipients, excel_content, message, message_limit=text_limit
+                parse_recipients,
+                excel_content,
+                message,
+                message_limit=telegram_limit,
+                targets=targets,
             )
             service = request.app.state.admin_service
             if media_kind and media_original_name:
@@ -224,10 +253,19 @@ def create_admin_router(prefix: str) -> APIRouter:
                 recipients=recipients,
                 buttons=buttons,
                 stats=stats,
+                targets=targets,
             )
             broadcast = await service.repository.get(broadcast_id)
-            sample = [item for item in recipients if item["status"] == "pending"][:5]
+            sample = [
+                item for item in recipients
+                if any(delivery["status"] == "pending" for delivery in item["deliveries"].values())
+            ][:5]
             preview_html = render_message(message, sample[0]["name"] if sample else "")
+            preview_max_html = (
+                adapt_telegram_html_for_max(preview_html)
+                if "max" in targets
+                else preview_html
+            )
             return templates.TemplateResponse(
                 request=request,
                 name="preview.html",
@@ -237,6 +275,7 @@ def create_admin_router(prefix: str) -> APIRouter:
                     recipients=sample,
                     stats=stats,
                     preview_html=Markup(preview_html),
+                    preview_max_html=Markup(preview_max_html),
                 ),
             )
         except UploadValidationError as error:
@@ -245,7 +284,12 @@ def create_admin_router(prefix: str) -> APIRouter:
             return templates.TemplateResponse(
                 request=request,
                 name="new.html",
-                context=context(request, error=str(error), values=values, max_enabled=False),
+                context=context(
+                    request,
+                    error=str(error),
+                    values=values,
+                    max_enabled=request.app.state.admin_config.max_enabled,
+                ),
                 status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
             )
 
@@ -297,13 +341,22 @@ def create_admin_router(prefix: str) -> APIRouter:
         recipients = await request.app.state.admin_service.repository.get_recipients(
             broadcast_id, limit=100, offset=(page - 1) * 100
         )
+        recipient_rows = [
+            {
+                "recipient": item,
+                "deliveries": {delivery.platform: delivery for delivery in item.deliveries},
+            }
+            for item in recipients
+        ]
+        platform_stats = await request.app.state.admin_service.repository.platform_stats(broadcast_id)
         return templates.TemplateResponse(
             request=request,
             name="detail.html",
             context=context(
                 request,
                 broadcast=broadcast,
-                recipients=recipients,
+                recipient_rows=recipient_rows,
+                platform_stats=platform_stats,
                 page=page,
                 pages=pages,
                 message_html=Markup(broadcast.message),
@@ -317,6 +370,7 @@ def create_admin_router(prefix: str) -> APIRouter:
         broadcast = await request.app.state.admin_service.repository.get(broadcast_id)
         if broadcast is None:
             raise HTTPException(status_code=404)
+        platform_stats = await request.app.state.admin_service.repository.platform_stats(broadcast_id)
         processed = broadcast.success_count + broadcast.error_count
         progress = round(processed / broadcast.valid_count * 100) if broadcast.valid_count else 100
         return {
@@ -327,6 +381,7 @@ def create_admin_router(prefix: str) -> APIRouter:
             "skipped_count": broadcast.skipped_count,
             "processed_count": processed,
             "progress": progress,
+            "platforms": platform_stats,
         }
 
     return router

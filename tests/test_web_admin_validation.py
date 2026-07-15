@@ -7,6 +7,7 @@ from web_admin.validation import (
     UploadValidationError,
     parse_recipients,
     render_message,
+    adapt_telegram_html_for_max,
     validate_buttons,
     validate_telegram_html,
 )
@@ -69,7 +70,9 @@ def test_excel_marks_duplicates_invalid_ids_and_missing_names() -> None:
         message_limit=4096,
     )
     assert [item["status"] for item in recipients] == ["pending", "skipped", "skipped", "skipped"]
-    assert stats == {"ready": 1, "skipped": 3, "duplicates": 1, "invalid": 2}
+    assert {key: stats[key] for key in ("ready", "skipped", "duplicates", "invalid")} == {
+        "ready": 1, "skipped": 3, "duplicates": 1, "invalid": 2
+    }
 
 
 def test_excel_checks_limit_after_name_substitution() -> None:
@@ -89,3 +92,51 @@ def test_button_allowlist_and_limit() -> None:
         validate_buttons([{"text": "Опасно", "action_key": "admin"}])
     with pytest.raises(UploadValidationError):
         validate_buttons([{"text": str(index), "action_key": "main_menu"} for index in range(9)])
+
+
+def test_adapts_telegram_html_for_max() -> None:
+    source = (
+        '<strike>Старое</strike> <tg-spoiler>секрет</tg-spoiler> '
+        '<blockquote expandable>цитата</blockquote> '
+        '<pre><code class="language-python">x = 1</code></pre> '
+        '<a href="tg://user?id=42">профиль</a> '
+        '<a href="https://hite-pro.ru">сайт</a>'
+    )
+    assert adapt_telegram_html_for_max(source) == (
+        '<s>Старое</s> секрет <blockquote>цитата</blockquote> '
+        '<pre><code>x = 1</code></pre> профиль '
+        '<a href="https://hite-pro.ru">сайт</a>'
+    )
+
+
+def test_excel_validates_platforms_independently() -> None:
+    recipients, stats = parse_recipients(
+        make_xlsx([
+            (123, 9001, "Анна"),
+            (123, 9002, "Иван"),
+            ("", 9003, "Олег"),
+            (456, 9002, "Мария"),
+        ]),
+        "Привет, [Имя]!",
+        message_limit=4096,
+        targets={"telegram", "max"},
+    )
+    assert [item["deliveries"]["telegram"]["status"] for item in recipients] == [
+        "pending", "skipped", "skipped", "pending"
+    ]
+    assert [item["deliveries"]["max"]["status"] for item in recipients] == [
+        "pending", "pending", "pending", "skipped"
+    ]
+    assert stats["platforms"]["telegram"]["ready"] == 2
+    assert stats["platforms"]["max"]["ready"] == 3
+
+
+def test_excel_allows_max_only_without_telegram_id() -> None:
+    recipients, stats = parse_recipients(
+        make_xlsx([("", 9001, "Анна")]),
+        "Привет, [Имя]!",
+        message_limit=4096,
+        targets={"max"},
+    )
+    assert recipients[0]["deliveries"]["max"]["status"] == "pending"
+    assert stats["ready"] == 1

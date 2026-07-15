@@ -58,12 +58,18 @@ class AdminWebConfig:
     session_secret: str
     data_dir: Path
     host: str = "127.0.0.1"
-    port: int = 8104
-    prefix: str = "/education/admin"
+    port: int = 8106
+    prefix: str = "/tg_education/admin"
+    max_bot_api_url: str = "http://127.0.0.1:8107"
+    max_bot_api_secret: str = ""
 
     @property
     def enabled(self) -> bool:
         return bool(self.password and self.session_secret)
+
+    @property
+    def max_enabled(self) -> bool:
+        return bool(self.max_bot_api_url and self.max_bot_api_secret)
 
 # Класс с данными для подключения к API AMO
 @dataclass
@@ -108,8 +114,10 @@ def load_config(path: str | None = BASE_DIR / '.env'):
             session_secret=env("ADMIN_SESSION_SECRET", default=""),
             data_dir=Path(env("ADMIN_DATA_DIR", default=str(BASE_DIR / "data" / "admin"))),
             host=env("WEB_ADMIN_HOST", default="127.0.0.1"),
-            port=env.int("WEB_ADMIN_PORT", default=8104),
-            prefix=env("WEB_ADMIN_PREFIX", default="/education/admin").rstrip("/"),
+            port=env.int("WEB_ADMIN_PORT", default=8106),
+            prefix=env("WEB_ADMIN_PREFIX", default="/tg_education/admin").rstrip("/"),
+            max_bot_api_url=env("MAX_BOT_API_URL", default="http://127.0.0.1:8107"),
+            max_bot_api_secret=env("MAX_BOT_API_SECRET", default=""),
         ),
         amo_config=AmoConfig(
             path_to_env=path,

@@ -14,6 +14,7 @@ NAME_MASK = "[Имя]"
 MAX_XLSX_SIZE = 10 * 1024 * 1024
 TELEGRAM_TEXT_LIMIT = 4096
 TELEGRAM_CAPTION_LIMIT = 1024
+MAX_TEXT_LIMIT = 4000
 ALLOWED_ACTIONS = {
     "main_menu": "Главное меню",
     "stat": "Статистика обучения",
@@ -157,6 +158,117 @@ def render_message(message: str, name: str) -> str:
     return message.replace(NAME_MASK, html.escape(name, quote=False))
 
 
+class _MaxHTMLRenderer(HTMLParser):
+    """Render already validated Telegram HTML into the MAX HTML subset."""
+
+    def __init__(self) -> None:
+        super().__init__(convert_charrefs=False)
+        self.output: list[str] = []
+        self.stack: list[str | None] = []
+
+    def handle_starttag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
+        tag = tag.casefold()
+        attrs_map = {name.casefold(): value for name, value in attrs}
+        emitted: str | None
+        if tag in {"tg-spoiler", "span"}:
+            emitted = None
+        elif tag == "strike":
+            emitted = "s"
+        elif tag == "a":
+            href = attrs_map.get("href", "") or ""
+            if urlparse(href).scheme in {"http", "https"}:
+                emitted = "a"
+                self.output.append(f'<a href="{html.escape(href, quote=True)}">')
+                self.stack.append(emitted)
+                return
+            emitted = None
+        else:
+            emitted = tag
+        if emitted is not None:
+            self.output.append(f"<{emitted}>")
+        self.stack.append(emitted)
+
+    def handle_endtag(self, tag: str) -> None:
+        emitted = self.stack.pop()
+        if emitted is not None:
+            self.output.append(f"</{emitted}>")
+
+    def handle_data(self, data: str) -> None:
+        self.output.append(data)
+
+    def handle_entityref(self, name: str) -> None:
+        self.output.append(f"&{name};")
+
+    def handle_charref(self, name: str) -> None:
+        self.output.append(f"&#{name};")
+
+
+class _MaxHTMLValidator(HTMLParser):
+    TAGS = {"b", "strong", "i", "em", "u", "ins", "s", "del", "a", "code", "pre", "blockquote"}
+
+    def __init__(self) -> None:
+        super().__init__(convert_charrefs=False)
+        self.stack: list[str] = []
+        self.text_parts: list[str] = []
+
+    def handle_starttag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
+        tag = tag.casefold()
+        if tag not in self.TAGS:
+            raise UploadValidationError(f"Тег <{tag}> не поддерживается MAX.")
+        attrs_map = {name.casefold(): value for name, value in attrs}
+        if tag == "a":
+            href = attrs_map.get("href")
+            parsed = urlparse(href or "")
+            if set(attrs_map) != {"href"} or parsed.scheme not in {"http", "https"} or not parsed.netloc:
+                raise UploadValidationError("MAX поддерживает только полные HTTP(S)-ссылки.")
+        elif attrs_map:
+            raise UploadValidationError(f"Атрибуты тега <{tag}> не поддерживаются MAX.")
+        self.stack.append(tag)
+
+    def handle_endtag(self, tag: str) -> None:
+        tag = tag.casefold()
+        if not self.stack or self.stack[-1] != tag:
+            raise UploadValidationError("Некорректное закрытие HTML-тега для MAX.")
+        self.stack.pop()
+
+    def handle_data(self, data: str) -> None:
+        self.text_parts.append(data)
+
+    def handle_entityref(self, name: str) -> None:
+        if name not in ALLOWED_ENTITIES:
+            raise UploadValidationError(f"HTML-сущность &{name}; не поддерживается MAX.")
+        self.text_parts.append(html.unescape(f"&{name};"))
+
+    def handle_charref(self, name: str) -> None:
+        try:
+            value = int(name[1:], 16) if name.lower().startswith("x") else int(name)
+            self.text_parts.append(chr(value))
+        except (ValueError, OverflowError) as error:
+            raise UploadValidationError(f"Некорректная HTML-сущность: &#{name};") from error
+
+    def close(self) -> None:
+        super().close()
+        if self.stack:
+            raise UploadValidationError(f"Не закрыт тег <{self.stack[-1]}> для MAX.")
+
+
+def adapt_telegram_html_for_max(message: str, *, limit: int = MAX_TEXT_LIMIT) -> str:
+    validate_telegram_html(message)
+    renderer = _MaxHTMLRenderer()
+    renderer.feed(message)
+    renderer.close()
+    rendered = "".join(renderer.output)
+    validator = _MaxHTMLValidator()
+    validator.feed(rendered)
+    validator.close()
+    visible = "".join(validator.text_parts)
+    if not visible.strip():
+        raise UploadValidationError("После адаптации для MAX сообщение пусто.")
+    if len(visible) > limit:
+        raise UploadValidationError(f"Текст для MAX должен быть не длиннее {limit} символов.")
+    return rendered
+
+
 def normalize_recipient_id(value: Any) -> int:
     if isinstance(value, bool):
         raise ValueError
@@ -179,7 +291,11 @@ def parse_recipients(
     message: str,
     *,
     message_limit: int,
-) -> tuple[list[dict[str, Any]], dict[str, int]]:
+    targets: set[str] | None = None,
+) -> tuple[list[dict[str, Any]], dict[str, Any]]:
+    targets = targets or {"telegram"}
+    if not targets or not targets.issubset({"telegram", "max"}):
+        raise UploadValidationError("Выберите Telegram и/или MAX.")
     if not file_content:
         raise UploadValidationError("Excel-файл пуст.")
     if len(file_content) > MAX_XLSX_SIZE:
@@ -204,8 +320,18 @@ def parse_recipients(
             raise UploadValidationError(f"Не найдены обязательные колонки: {', '.join(missing)}.")
 
         recipients: list[dict[str, Any]] = []
-        seen: set[int] = set()
-        stats = {"ready": 0, "skipped": 0, "duplicates": 0, "invalid": 0}
+        seen = {"telegram": set(), "max": set()}
+        platform_stats = {
+            platform: {"ready": 0, "skipped": 0, "duplicates": 0, "invalid": 0}
+            for platform in targets
+        }
+        stats: dict[str, Any] = {
+            "ready": 0,
+            "skipped": 0,
+            "duplicates": 0,
+            "invalid": 0,
+            "platforms": platform_stats,
+        }
         needs_name = NAME_MASK in message
         for row_number, row in enumerate(rows, start=2):
             if all(value in (None, "") for value in row):
@@ -214,35 +340,52 @@ def parse_recipients(
             raw_max = row[columns["max_id"]] if columns["max_id"] < len(row) else None
             raw_name = row[columns["имя"]] if columns["имя"] < len(row) else None
             name = str(raw_name or "").strip()
-            error = None
-            status = "pending"
             try:
                 telegram_id = normalize_recipient_id(raw_tg)
             except ValueError:
                 telegram_id = None
-                status, error = "skipped", "Некорректный telegram_id"
-                stats["invalid"] += 1
             try:
                 max_id = normalize_recipient_id(raw_max)
             except ValueError:
                 max_id = None
-            if telegram_id is not None and telegram_id in seen:
-                status, error = "skipped", "Повторный telegram_id"
-                stats["duplicates"] += 1
-            elif status == "pending" and needs_name and not name:
-                status, error = "skipped", "Не указано имя для шаблона [Имя]"
-                stats["invalid"] += 1
-            elif status == "pending":
-                try:
-                    validate_telegram_html(render_message(message, name), limit=message_limit)
-                except UploadValidationError as validation_error:
-                    status, error = "skipped", str(validation_error)
-                    stats["invalid"] += 1
-            if status == "pending" and telegram_id is not None:
-                seen.add(telegram_id)
-                stats["ready"] += 1
-            else:
-                stats["skipped"] += 1
+            deliveries: dict[str, dict[str, Any]] = {}
+            for platform in targets:
+                target_id = telegram_id if platform == "telegram" else max_id
+                raw_target = raw_tg if platform == "telegram" else raw_max
+                status, error, issue = "pending", None, None
+                if target_id is None:
+                    status, error, issue = "skipped", f"Некорректный {'telegram_id' if platform == 'telegram' else 'max_id'}", "invalid"
+                elif target_id in seen[platform]:
+                    status, error, issue = "skipped", f"Повторный {'telegram_id' if platform == 'telegram' else 'max_id'}", "duplicates"
+                elif needs_name and not name:
+                    status, error, issue = "skipped", "Не указано имя для шаблона [Имя]", "invalid"
+                else:
+                    try:
+                        personalized = render_message(message, name)
+                        if platform == "telegram":
+                            validate_telegram_html(personalized, limit=message_limit)
+                        else:
+                            adapt_telegram_html_for_max(personalized, limit=MAX_TEXT_LIMIT)
+                    except UploadValidationError as validation_error:
+                        status, error, issue = "skipped", str(validation_error), "invalid"
+
+                if status == "pending":
+                    seen[platform].add(target_id)
+                    platform_stats[platform]["ready"] += 1
+                    stats["ready"] += 1
+                else:
+                    platform_stats[platform]["skipped"] += 1
+                    stats["skipped"] += 1
+                    if issue:
+                        platform_stats[platform][issue] += 1
+                        stats[issue] += 1
+                deliveries[platform] = {
+                    "target_id": target_id,
+                    "raw_target_id": str(raw_target or "").strip(),
+                    "status": status,
+                    "error": error,
+                }
+            primary = deliveries["telegram"] if "telegram" in deliveries else deliveries["max"]
             recipients.append({
                 "row_number": row_number,
                 "telegram_id": telegram_id,
@@ -250,8 +393,9 @@ def parse_recipients(
                 "max_id": max_id,
                 "raw_max_id": str(raw_max or "").strip(),
                 "name": name,
-                "status": status,
-                "error": error,
+                "status": primary["status"],
+                "error": primary["error"],
+                "deliveries": deliveries,
             })
     finally:
         workbook.close()

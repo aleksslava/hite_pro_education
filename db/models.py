@@ -62,6 +62,8 @@ class Broadcast(Base):
     media_path: Mapped[str | None] = mapped_column(String(1024), nullable=True)
     media_kind: Mapped[str | None] = mapped_column(String(16), nullable=True)
     media_original_name: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    max_media_token: Mapped[str | None] = mapped_column(String(1024), nullable=True)
+    max_media_type: Mapped[str | None] = mapped_column(String(16), nullable=True)
     status: Mapped[str] = mapped_column(String(32), index=True)
     scheduled_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), index=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))

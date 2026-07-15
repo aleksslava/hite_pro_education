@@ -8,7 +8,7 @@
 <section class="form-column">
     <div class="form-section"><div class="section-number">01</div><div class="form-section-body">
         <h2>Канал и сообщение</h2>
-        <div class="channel-selector"><label class="channel-option"><input type="checkbox" checked disabled><span><strong>Telegram</strong><small>Отправка по telegram_id</small></span></label><label class="channel-option disabled"><input type="checkbox" disabled><span><strong>MAX</strong><small>Интеграция не настроена</small></span></label></div>
+        <div class="channel-selector"><label class="channel-option"><input type="checkbox" name="send_telegram" value="1" data-channel-input="telegram" {% if values.get('send_telegram', true) %}checked{% endif %}><span><strong>Telegram</strong><small>Отправка по telegram_id</small></span></label><label class="channel-option {% if not max_enabled %}disabled{% endif %}"><input type="checkbox" name="send_max" value="1" data-channel-input="max" {% if values.get('send_max', max_enabled) %}checked{% endif %} {% if not max_enabled %}disabled{% endif %}><span><strong>MAX</strong><small>{{ 'Отправка по max_id' if max_enabled else 'Интеграция не настроена' }}</small></span></label></div>
         <label><span>HTML-текст</span>
             <div class="format-toolbar" data-format-toolbar>
                 <button type="button" data-tag="b">Жирный</button><button type="button" data-tag="i">Курсив</button><button type="button" data-tag="u">Подчеркнуть</button><button type="button" data-tag="s">Зачеркнуть</button><button type="button" data-tag="tg-spoiler">Спойлер</button><button type="button" data-tag="code">Код</button><button type="button" data-tag="blockquote">Цитата</button><button type="button" data-link>Ссылка</button>
@@ -31,8 +31,9 @@
     <div class="form-actions"><button type="submit" class="primary-button">Проверить и продолжить</button></div>
 </section>
 <aside class="preview-column">
-    <p class="eyebrow">Предпросмотр</p><span class="channel-badge telegram">Telegram</span>
-    <div class="telegram-preview"><div class="telegram-avatar">H</div><div class="telegram-bubble"><strong>HiTE PRO</strong><div class="preview-media" data-media-preview></div><div class="message-render" data-message-preview>Текст сообщения появится здесь.</div><div data-buttons-preview></div></div></div>
+    <p class="eyebrow">Предпросмотр</p><div class="preview-tabs" role="tablist"><button type="button" class="active" data-preview-tab="telegram">Telegram</button><button type="button" data-preview-tab="max" {% if not max_enabled %}disabled{% endif %}>MAX</button></div>
+    <div data-channel-preview="telegram" class="channel-preview active"><div class="telegram-preview"><div class="telegram-avatar">H</div><div class="telegram-bubble"><strong>HiTE PRO</strong><div class="preview-media" data-media-preview></div><div class="message-render" data-message-preview>Текст сообщения появится здесь.</div><div data-buttons-preview></div></div></div></div>
+    <div data-channel-preview="max" class="channel-preview"><div class="telegram-preview max-preview"><div class="telegram-avatar">H</div><div class="telegram-bubble"><strong>HiTE PRO · MAX</strong><div class="preview-media" data-media-preview></div><div class="message-render" data-message-preview>Текст сообщения появится здесь.</div><div data-buttons-preview></div></div></div></div>
     <p class="preview-note">В предпросмотре [Имя] заменяется на «Анна».</p>
 </aside>
 </form>

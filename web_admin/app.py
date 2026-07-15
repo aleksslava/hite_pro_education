@@ -14,11 +14,17 @@ from web_admin.auth import LoginRateLimiter
 from web_admin.repository import BroadcastRepository
 from web_admin.routes import create_admin_router
 from web_admin.service import BroadcastService
+from web_admin.max_client import MaxBroadcastClient
 
 
 def create_admin_app(bot: Bot, config: AdminWebConfig) -> FastAPI:
     repository = BroadcastRepository(async_session_factory)
-    service = BroadcastService(repository, bot, config.data_dir)
+    max_client = (
+        MaxBroadcastClient(config.max_bot_api_url, config.max_bot_api_secret)
+        if config.max_enabled
+        else None
+    )
+    service = BroadcastService(repository, bot, config.data_dir, max_client=max_client)
 
     @asynccontextmanager
     async def lifespan(_: FastAPI):

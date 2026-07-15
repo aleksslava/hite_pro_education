@@ -1,0 +1,74 @@
+.channel-badge.max {
+    background: #ece3f6;
+    color: #68458d;
+}
+
+.preview-tabs {
+    display: flex;
+    gap: 4px;
+    margin: 12px 0;
+    border-bottom: 1px solid var(--line);
+}
+
+.preview-tabs button {
+    border: 0;
+    border-bottom: 2px solid transparent;
+    background: transparent;
+    padding: 8px 10px;
+    color: var(--muted);
+    font: inherit;
+    font-size: 12px;
+    font-weight: 700;
+    cursor: pointer;
+}
+
+.preview-tabs button.active {
+    color: var(--ink);
+    border-bottom-color: var(--accent);
+}
+
+.preview-tabs button:disabled {
+    opacity: .35;
+    cursor: default;
+}
+
+.channel-preview { display: none; }
+.channel-preview.active { display: block; }
+.max-preview { background: #e7e1eb; }
+
+.platform-progress {
+    display: flex;
+    gap: 36px;
+    padding: 18px 0;
+    border-bottom: 1px solid var(--line);
+}
+
+.platform-progress > div {
+    display: grid;
+    grid-template-columns: auto auto;
+    align-items: center;
+    gap: 3px 12px;
+}
+
+.platform-progress .channel-badge {
+    grid-row: 1 / 3;
+    margin: 0;
+}
+
+.platform-progress strong { font-size: 16px; }
+.platform-progress small { color: var(--muted); }
+
+.table-wrap td > .status {
+    margin: 7px 0 0 8px;
+}
+
+.table-wrap td > .error-cell {
+    margin-top: 7px;
+}
+
+@media (max-width: 700px) {
+    .platform-progress {
+        display: grid;
+        gap: 14px;
+    }
+}
