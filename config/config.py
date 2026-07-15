@@ -51,6 +51,20 @@ class TgBot:
 class Database:
     url: str  # URL подключения к PostgreSQL (async)
 
+
+@dataclass
+class AdminWebConfig:
+    password: str
+    session_secret: str
+    data_dir: Path
+    host: str = "127.0.0.1"
+    port: int = 8104
+    prefix: str = "/education/admin"
+
+    @property
+    def enabled(self) -> bool:
+        return bool(self.password and self.session_secret)
+
 # Класс с данными для подключения к API AMO
 @dataclass
 class AmoConfig:
@@ -67,6 +81,7 @@ class AmoConfig:
 class Config:
     tg_bot: TgBot
     db: Database
+    admin_web: AdminWebConfig
     amo_config: AmoConfig
     amo_fields: dict
     admin: str
@@ -87,6 +102,14 @@ def load_config(path: str | None = BASE_DIR / '.env'):
         ),
         db=Database(
             url=env("DATABASE_URL")
+        ),
+        admin_web=AdminWebConfig(
+            password=env("ADMIN_PANEL_PASSWORD", default=""),
+            session_secret=env("ADMIN_SESSION_SECRET", default=""),
+            data_dir=Path(env("ADMIN_DATA_DIR", default=str(BASE_DIR / "data" / "admin"))),
+            host=env("WEB_ADMIN_HOST", default="127.0.0.1"),
+            port=env.int("WEB_ADMIN_PORT", default=8104),
+            prefix=env("WEB_ADMIN_PREFIX", default="/education/admin").rstrip("/"),
         ),
         amo_config=AmoConfig(
             path_to_env=path,

@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="ru">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>{% block title %}Рассылки · HiTE PRO{% endblock %}</title>
+    <link rel="stylesheet" href="{{ admin_prefix }}/static/admin.css">
+    <script src="{{ admin_prefix }}/static/admin.js" defer></script>
+</head>
+<body class="{% block body_class %}{% endblock %}">
+{% if csrf_token %}
+<div class="app-shell">
+    <aside class="sidebar">
+        <a class="brand" href="{{ admin_prefix }}"><span class="brand-mark">H</span><span><strong>HiTE PRO</strong><small>Рассылки</small></span></a>
+        <nav class="navigation">
+            <a href="{{ admin_prefix }}" class="{% if request.url.path == admin_prefix %}active{% endif %}">История</a>
+            <a href="{{ admin_prefix }}/new" class="{% if request.url.path.endswith('/new') %}active{% endif %}">Новая рассылка</a>
+        </nav>
+        <form action="{{ admin_prefix }}/logout" method="post" class="logout-form">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+            <button class="text-button" type="submit">Выйти</button>
+        </form>
+    </aside>
+    <main class="workspace">{% block content %}{% endblock %}</main>
+</div>
+{% else %}{% block public_content %}{% endblock %}{% endif %}
+</body>
+</html>

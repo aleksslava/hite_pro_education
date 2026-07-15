@@ -1,6 +1,8 @@
 import asyncio
 import logging
 
+import uvicorn
+
 from aiogram import Bot, Dispatcher, types
 from aiogram.client.session.aiohttp import AiohttpSession
 from aiogram.client.telegram import TelegramAPIServer
@@ -20,6 +22,7 @@ from dialogs.hp_first_lesson_dialog import hp_first_lesson_dialog
 from dialogs.hp_second_lesson_dialog import hp_second_lesson_dialog
 from dialogs.hp_third_lesson_dialog import hp_third_lesson_dialog
 from handlers.start_handler import main_menu_router
+from handlers.broadcast_actions import broadcast_actions_router
 from config.config import load_config
 from aiogram.enums.parse_mode import ParseMode
 from aiogram.client.default import DefaultBotProperties
@@ -30,6 +33,7 @@ from service.background_notifications import (
     start_inactivity_scheduler,
     stop_inactivity_scheduler,
 )
+from web_admin.app import create_admin_app
 
 logger = logging.getLogger(__name__)
 
@@ -74,6 +78,7 @@ dp.errors.middleware(AmoApiMiddleware(amo_api, amo_fields=config.amo_fields, adm
                                       webhook_url=config.webhook_url, utm_token=config.utm_token))
 
 dp.include_router(main_menu_router)
+dp.include_router(broadcast_actions_router)
 dp.include_routers(main_menu_dialog, hp_first_lesson_dialog, hp_second_lesson_dialog,
                    hp_third_lesson_dialog, hp_fourth_lesson_dialog, hp_fifth_lesson_dialog, hp_sixth_lesson_dialog,
                    hp_seventh_lesson_dialog, hp_exam_lesson_dialog, admin_dialog, errors_router)
@@ -81,27 +86,46 @@ dp.include_routers(main_menu_dialog, hp_first_lesson_dialog, hp_second_lesson_di
 setup_dialogs(dp)
 
 
-async def on_startup(bot: Bot, **_: object) -> None:
+async def main() -> None:
     global inactivity_scheduler_task
     try:
         await init_db()
     except Exception as exc:
-        # Don't crash bot startup if DB is temporarily unavailable.
-        print(f"DB init failed: {exc}")
+        logger.exception("DB init failed: %s", exc)
+
     inactivity_scheduler_task = start_inactivity_scheduler(bot)
+    server: uvicorn.Server | None = None
+    server_task: asyncio.Task | None = None
+    if config.admin_web.enabled:
+        app = create_admin_app(bot, config.admin_web)
+        server = uvicorn.Server(uvicorn.Config(
+            app,
+            host=config.admin_web.host,
+            port=config.admin_web.port,
+            log_level="info",
+        ))
+        server_task = asyncio.create_task(server.serve(), name="web-admin-server")
+        logger.info(
+            "Web admin enabled at http://%s:%s%s",
+            config.admin_web.host,
+            config.admin_web.port,
+            config.admin_web.prefix,
+        )
+    else:
+        logger.warning("Web admin disabled: configure ADMIN_PANEL_PASSWORD and ADMIN_SESSION_SECRET")
+
+    try:
+        await bot.delete_webhook(drop_pending_updates=True)
+        await dp.start_polling(bot)
+    finally:
+        if server is not None:
+            server.should_exit = True
+        if server_task is not None:
+            await server_task
+        await stop_inactivity_scheduler(inactivity_scheduler_task)
+        inactivity_scheduler_task = None
+        await shutdown_db()
 
 
-async def on_shutdown(bot: Bot, **_: object) -> None:
-    global inactivity_scheduler_task
-    await stop_inactivity_scheduler(inactivity_scheduler_task)
-    inactivity_scheduler_task = None
-    await shutdown_db()
-
-
-dp.startup.register(on_startup)
-dp.shutdown.register(on_shutdown)
-
-
-
-if __name__ == '__main__':
-    dp.run_polling(bot)
+if __name__ == "__main__":
+    asyncio.run(main())

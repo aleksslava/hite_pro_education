@@ -1,0 +1,11 @@
+{% extends "base.html" %}
+{% block title %}Проверка рассылки · HiTE PRO{% endblock %}
+{% block content %}
+<header class="page-header compact-header"><div><p class="eyebrow">Проверка</p><h1>Подтвердите рассылку</h1><p>Файл разобран. Проверьте сообщение и итог проверки.</p></div></header>
+<section class="review-layout"><div class="review-main">
+    <div class="telegram-preview review-message"><div class="telegram-avatar">H</div><div class="telegram-bubble"><strong>HiTE PRO</strong><div class="message-render">{{ preview_html }}</div>{% for button in broadcast.buttons %}<span class="telegram-button">{{ button.text }}</span>{% endfor %}</div></div>
+    <section class="data-section"><div class="section-heading"><h2>Первые получатели</h2><span>до 5</span></div><div class="table-wrap"><table><thead><tr><th>Строка</th><th>telegram_id</th><th>max_id</th><th>Имя</th></tr></thead><tbody>{% for item in recipients %}<tr><td>{{ item.row_number }}</td><td>{{ item.telegram_id }}</td><td>{{ item.max_id or '—' }}</td><td>{{ item.name or '—' }}</td></tr>{% endfor %}</tbody></table></div></section>
+</div><aside class="review-summary"><p class="eyebrow">Итог проверки</p><dl>
+    <div><dt>Файл</dt><dd>{{ broadcast.source_filename }}</dd></div><div><dt>Telegram</dt><dd>{{ stats.ready }} готово · {{ stats.skipped }} пропущено</dd></div><div><dt>Дубли</dt><dd>{{ stats.duplicates }}</dd></div><div><dt>Запуск</dt><dd>{{ broadcast.scheduled_at|moscow }} МСК</dd></div><div><dt>Медиа</dt><dd>{{ broadcast.media_original_name or 'Нет' }}</dd></div><div><dt>Кнопки</dt><dd>{{ broadcast.buttons|length }}</dd></div>
+</dl><form action="{{ admin_prefix }}/broadcasts/{{ broadcast.id }}/confirm" method="post"><input type="hidden" name="csrf_token" value="{{ csrf_token }}"><button class="primary-button full-width">Подтвердить запуск</button></form><form action="{{ admin_prefix }}/broadcasts/{{ broadcast.id }}/discard" method="post"><input type="hidden" name="csrf_token" value="{{ csrf_token }}"><button class="text-button danger full-width">Отменить и удалить</button></form></aside></section>
+{% endblock %}

@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+{% block title %}Новая рассылка · HiTE PRO{% endblock %}
+{% block content %}
+<header class="page-header compact-header"><div><p class="eyebrow">Новая рассылка</p><h1>Подготовьте сообщение</h1><p>Проверьте текст, получателей и запуск перед постановкой в очередь.</p></div></header>
+{% if error %}<div class="alert alert-error" role="alert">{{ error }}</div>{% endif %}
+<form action="{{ admin_prefix }}/preview" method="post" enctype="multipart/form-data" class="composer" data-composer>
+<input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+<section class="form-column">
+    <div class="form-section"><div class="section-number">01</div><div class="form-section-body">
+        <h2>Канал и сообщение</h2>
+        <div class="channel-selector"><label class="channel-option"><input type="checkbox" checked disabled><span><strong>Telegram</strong><small>Отправка по telegram_id</small></span></label><label class="channel-option disabled"><input type="checkbox" disabled><span><strong>MAX</strong><small>Интеграция не настроена</small></span></label></div>
+        <label><span>HTML-текст</span>
+            <div class="format-toolbar" data-format-toolbar>
+                <button type="button" data-tag="b">Жирный</button><button type="button" data-tag="i">Курсив</button><button type="button" data-tag="u">Подчеркнуть</button><button type="button" data-tag="s">Зачеркнуть</button><button type="button" data-tag="tg-spoiler">Спойлер</button><button type="button" data-tag="code">Код</button><button type="button" data-tag="blockquote">Цитата</button><button type="button" data-link>Ссылка</button>
+            </div>
+            <textarea name="message" rows="11" required data-message-input placeholder="Здравствуйте, <b>[Имя]</b>!">{{ values.get('message', '') }}</textarea>
+            <small><span data-character-count>0</span> видимых символов, лимит <span data-character-limit>4 096</span>. Для персонализации используйте [Имя].</small>
+        </label>
+        <label><span>Фото или видео</span><input type="file" name="media_file" accept=".jpg,.jpeg,.png,.mp4" data-media-input><small>JPG/PNG до 10 МБ, MP4 до 50 МБ. С медиа лимит текста — 1 024 символа.</small></label>
+    </div></div>
+    <div class="form-section"><div class="section-number">02</div><div class="form-section-body">
+        <div class="section-title-row"><h2>Inline-кнопки</h2><button type="button" class="text-button" data-add-button>+ Добавить</button></div>
+        <div data-buttons-list></div>
+        <template data-button-template><div class="button-row"><label><span>Текст кнопки</span><input type="text" name="button_text" maxlength="64" placeholder="Начать урок"></label><label><span>Действие</span><select name="button_action">{% for key, label in allowed_actions.items() %}<option value="{{ key }}">{{ label }}</option>{% endfor %}</select></label><button type="button" class="remove-button" data-remove-button aria-label="Удалить">×</button></div></template>
+    </div></div>
+    <div class="form-section"><div class="section-number">03</div><div class="form-section-body">
+        <h2>Получатели и запуск</h2>
+        <label><span>Excel со списком</span><input type="file" name="recipients_file" accept=".xlsx" required><small>Обязательные колонки: telegram_id, max_id и Имя.</small></label>
+        <label><span>Дата и время по Москве</span><input type="datetime-local" name="scheduled_at" value="{{ values.get('scheduled_at', '') }}"><small>Оставьте пустым для запуска сразу после подтверждения.</small></label>
+    </div></div>
+    <div class="form-actions"><button type="submit" class="primary-button">Проверить и продолжить</button></div>
+</section>
+<aside class="preview-column">
+    <p class="eyebrow">Предпросмотр</p><span class="channel-badge telegram">Telegram</span>
+    <div class="telegram-preview"><div class="telegram-avatar">H</div><div class="telegram-bubble"><strong>HiTE PRO</strong><div class="preview-media" data-media-preview></div><div class="message-render" data-message-preview>Текст сообщения появится здесь.</div><div data-buttons-preview></div></div></div>
+    <p class="preview-note">В предпросмотре [Имя] заменяется на «Анна».</p>
+</aside>
+</form>
+{% endblock %}

@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% block title %}История рассылок · HiTE PRO{% endblock %}
+{% block content %}
+<header class="page-header">
+    <div><p class="eyebrow">Рабочая область</p><h1>История рассылок</h1><p>Запланированные задания и результаты отправок через Telegram.</p></div>
+    <a href="{{ admin_prefix }}/new" class="primary-button">Создать рассылку</a>
+</header>
+<section class="metrics-line">
+    <div><span>Запланировано</span><strong>{{ summary.scheduled }}</strong></div>
+    <div><span>Выполняется</span><strong>{{ summary.running }}</strong></div>
+    <div><span>Успешно</span><strong>{{ summary.success }}</strong></div>
+    <div><span>Ошибок</span><strong>{{ summary.errors }}</strong></div>
+</section>
+<section class="data-section">
+    <div class="section-heading"><h2>Все рассылки</h2><span>{{ broadcasts|length }}</span></div>
+    {% if broadcasts %}
+    <div class="table-wrap"><table><thead><tr><th>Рассылка</th><th>Запуск</th><th>Статус</th><th>Успешно</th><th>Ошибки</th></tr></thead><tbody>
+    {% for item in broadcasts %}<tr>
+        <td><a class="table-link" href="{{ admin_prefix }}/broadcasts/{{ item.id }}">№{{ item.id }} · {{ item.message|striptags|truncate(56) }}</a><small>{{ item.source_filename }}</small></td>
+        <td>{{ item.scheduled_at|moscow }} МСК</td>
+        <td><span class="status status-{{ item.status }}">{{ status_labels.get(item.status, item.status) }}</span></td>
+        <td>{{ item.success_count }} / {{ item.valid_count }}</td><td>{{ item.error_count }}</td>
+    </tr>{% endfor %}
+    </tbody></table></div>
+    {% else %}<div class="empty-state"><h3>Рассылок пока нет</h3><p>Загрузите Excel и подготовьте первое сообщение.</p><a class="secondary-button" href="{{ admin_prefix }}/new">Перейти к созданию</a></div>{% endif %}
+</section>
+{% endblock %}

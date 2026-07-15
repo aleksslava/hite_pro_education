@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+{% block title %}Вход · Рассылки HiTE PRO{% endblock %}
+{% block body_class %}login-page{% endblock %}
+{% block public_content %}
+<main class="login-shell">
+    <div class="login-brand"><span class="brand-mark">H</span><span><strong>HiTE PRO</strong><small>Рассылки</small></span></div>
+    <form action="{{ admin_prefix }}/login" method="post" class="login-form">
+        <p class="eyebrow">Служебный доступ</p>
+        <h1>Вход в админку</h1>
+        <p>Введите пароль для управления рассылками.</p>
+        {% if error %}<div class="alert alert-error">{{ error }}</div>{% endif %}
+        <label><span>Пароль</span><input type="password" name="password" required autofocus autocomplete="current-password"></label>
+        <button type="submit" class="primary-button">Войти</button>
+    </form>
+</main>
+{% endblock %}
