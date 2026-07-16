@@ -286,16 +286,11 @@ def normalize_recipient_id(value: Any) -> int:
     return recipient_id
 
 
-def parse_recipients(
-    file_content: bytes,
-    message: str,
-    *,
-    message_limit: int,
-    targets: set[str] | None = None,
-) -> tuple[list[dict[str, Any]], dict[str, Any]]:
-    targets = targets or {"telegram"}
-    if not targets or not targets.issubset({"telegram", "max"}):
-        raise UploadValidationError("Выберите Telegram и/или MAX.")
+def _raw_cell_text(value: Any) -> str:
+    return "" if value is None else str(value).strip()
+
+
+def parse_recipient_rows(file_content: bytes) -> list[dict[str, Any]]:
     if not file_content:
         raise UploadValidationError("Excel-файл пуст.")
     if len(file_content) > MAX_XLSX_SIZE:
@@ -320,25 +315,17 @@ def parse_recipients(
             raise UploadValidationError(f"Не найдены обязательные колонки: {', '.join(missing)}.")
 
         recipients: list[dict[str, Any]] = []
-        seen = {"telegram": set(), "max": set()}
-        platform_stats = {
-            platform: {"ready": 0, "skipped": 0, "duplicates": 0, "invalid": 0}
-            for platform in targets
-        }
-        stats: dict[str, Any] = {
-            "ready": 0,
-            "skipped": 0,
-            "duplicates": 0,
-            "invalid": 0,
-            "platforms": platform_stats,
-        }
-        needs_name = NAME_MASK in message
+        amo_column = columns.get("amo_deal_id")
         for row_number, row in enumerate(rows, start=2):
             if all(value in (None, "") for value in row):
                 continue
             raw_tg = row[columns["telegram_id"]] if columns["telegram_id"] < len(row) else None
             raw_max = row[columns["max_id"]] if columns["max_id"] < len(row) else None
             raw_name = row[columns["имя"]] if columns["имя"] < len(row) else None
+            raw_amo = row[amo_column] if amo_column is not None and amo_column < len(row) else None
+            raw_telegram_id = _raw_cell_text(raw_tg)
+            raw_max_id = _raw_cell_text(raw_max)
+            raw_amo_deal_id = _raw_cell_text(raw_amo)
             name = str(raw_name or "").strip()
             try:
                 telegram_id = normalize_recipient_id(raw_tg)
@@ -348,62 +335,167 @@ def parse_recipients(
                 max_id = normalize_recipient_id(raw_max)
             except ValueError:
                 max_id = None
-            deliveries: dict[str, dict[str, Any]] = {}
-            for platform in targets:
-                target_id = telegram_id if platform == "telegram" else max_id
-                raw_target = raw_tg if platform == "telegram" else raw_max
-                status, error, issue = "pending", None, None
-                if target_id is None:
-                    status, error, issue = "skipped", f"Некорректный {'telegram_id' if platform == 'telegram' else 'max_id'}", "invalid"
-                elif target_id in seen[platform]:
-                    status, error, issue = "skipped", f"Повторный {'telegram_id' if platform == 'telegram' else 'max_id'}", "duplicates"
-                elif needs_name and not name:
-                    status, error, issue = "skipped", "Не указано имя для шаблона [Имя]", "invalid"
-                else:
-                    try:
-                        personalized = render_message(message, name)
-                        if platform == "telegram":
-                            validate_telegram_html(personalized, limit=message_limit)
-                        else:
-                            adapt_telegram_html_for_max(personalized, limit=MAX_TEXT_LIMIT)
-                    except UploadValidationError as validation_error:
-                        status, error, issue = "skipped", str(validation_error), "invalid"
-
-                if status == "pending":
-                    seen[platform].add(target_id)
-                    platform_stats[platform]["ready"] += 1
-                    stats["ready"] += 1
-                else:
-                    platform_stats[platform]["skipped"] += 1
-                    stats["skipped"] += 1
-                    if issue:
-                        platform_stats[platform][issue] += 1
-                        stats[issue] += 1
-                deliveries[platform] = {
-                    "target_id": target_id,
-                    "raw_target_id": str(raw_target or "").strip(),
-                    "status": status,
-                    "error": error,
-                }
-            primary = deliveries["telegram"] if "telegram" in deliveries else deliveries["max"]
+            try:
+                amo_deal_id = normalize_recipient_id(raw_amo)
+            except ValueError:
+                amo_deal_id = None
+            direct_ids_blank = not raw_telegram_id and not raw_max_id
             recipients.append({
                 "row_number": row_number,
                 "telegram_id": telegram_id,
-                "raw_telegram_id": str(raw_tg or "").strip(),
+                "raw_telegram_id": raw_telegram_id,
                 "max_id": max_id,
-                "raw_max_id": str(raw_max or "").strip(),
+                "raw_max_id": raw_max_id,
+                "amo_deal_id": amo_deal_id,
+                "raw_amo_deal_id": raw_amo_deal_id,
+                "direct_ids_blank": direct_ids_blank,
+                "amo_lookup_required": direct_ids_blank and amo_deal_id is not None,
                 "name": name,
-                "status": primary["status"],
-                "error": primary["error"],
-                "deliveries": deliveries,
             })
     finally:
         workbook.close()
     if not recipients:
         raise UploadValidationError("В Excel-файле нет получателей.")
+    return recipients
+
+
+def collect_amo_deal_ids(recipients: list[dict[str, Any]]) -> set[int]:
+    return {
+        recipient["amo_deal_id"]
+        for recipient in recipients
+        if recipient["amo_lookup_required"]
+    }
+
+
+def prepare_recipients(
+    recipients: list[dict[str, Any]],
+    message: str,
+    *,
+    message_limit: int,
+    targets: set[str] | None = None,
+    amo_users: dict[int, list[dict[str, int | None]]] | None = None,
+) -> tuple[list[dict[str, Any]], dict[str, Any]]:
+    targets = targets or {"telegram"}
+    if not targets or not targets.issubset({"telegram", "max"}):
+        raise UploadValidationError("Выберите Telegram и/или MAX.")
+    amo_users = amo_users or {}
+    seen = {"telegram": set(), "max": set()}
+    platform_stats = {
+        platform: {"ready": 0, "skipped": 0, "duplicates": 0, "invalid": 0}
+        for platform in targets
+    }
+    stats: dict[str, Any] = {
+        "ready": 0,
+        "skipped": 0,
+        "duplicates": 0,
+        "invalid": 0,
+        "platforms": platform_stats,
+    }
+    needs_name = NAME_MASK in message
+    prepared: list[dict[str, Any]] = []
+
+    for source in recipients:
+        recipient = dict(source)
+        telegram_id = source["telegram_id"]
+        max_id = source["max_id"]
+        resolution_error: str | None = None
+        resolved_from_amo = False
+
+        if source["direct_ids_blank"]:
+            amo_deal_id = source["amo_deal_id"]
+            if not source["raw_amo_deal_id"]:
+                resolution_error = "Не указаны telegram_id, max_id и amo_deal_id"
+            elif amo_deal_id is None:
+                resolution_error = "Некорректный amo_deal_id"
+            else:
+                matches = amo_users.get(amo_deal_id, [])
+                if not matches:
+                    resolution_error = f"Пользователь с amo_deal_id {amo_deal_id} не найден"
+                elif len(matches) > 1:
+                    resolution_error = f"По amo_deal_id {amo_deal_id} найдено несколько пользователей"
+                else:
+                    telegram_id = matches[0].get("telegram_id")
+                    max_id = matches[0].get("max_id")
+                    resolved_from_amo = True
+
+        recipient["telegram_id"] = telegram_id
+        recipient["max_id"] = max_id
+        deliveries: dict[str, dict[str, Any]] = {}
+        for platform in targets:
+            id_column = "telegram_id" if platform == "telegram" else "max_id"
+            db_column = "tg_user_id" if platform == "telegram" else "max_user_id"
+            target_id = telegram_id if platform == "telegram" else max_id
+            raw_target = source["raw_telegram_id"] if platform == "telegram" else source["raw_max_id"]
+            status, error, issue = "pending", None, None
+            if resolution_error:
+                status, error, issue = "skipped", resolution_error, "invalid"
+            elif target_id is None:
+                if resolved_from_amo:
+                    error = f"У пользователя с amo_deal_id {source['amo_deal_id']} не заполнен {db_column}"
+                elif raw_target:
+                    error = f"Некорректный {id_column}"
+                else:
+                    error = f"Не указан {id_column}"
+                status, issue = "skipped", "invalid"
+            elif target_id in seen[platform]:
+                status, error, issue = "skipped", f"Повторный {id_column}", "duplicates"
+            elif needs_name and not source["name"]:
+                status, error, issue = "skipped", "Не указано имя для шаблона [Имя]", "invalid"
+            else:
+                try:
+                    personalized = render_message(message, source["name"])
+                    if platform == "telegram":
+                        validate_telegram_html(personalized, limit=message_limit)
+                    else:
+                        adapt_telegram_html_for_max(personalized, limit=MAX_TEXT_LIMIT)
+                except UploadValidationError as validation_error:
+                    status, error, issue = "skipped", str(validation_error), "invalid"
+
+            if status == "pending":
+                seen[platform].add(target_id)
+                platform_stats[platform]["ready"] += 1
+                stats["ready"] += 1
+            else:
+                platform_stats[platform]["skipped"] += 1
+                stats["skipped"] += 1
+                if issue:
+                    platform_stats[platform][issue] += 1
+                    stats[issue] += 1
+            deliveries[platform] = {
+                "target_id": target_id,
+                "raw_target_id": raw_target,
+                "status": status,
+                "error": error,
+            }
+        primary = deliveries["telegram"] if "telegram" in deliveries else deliveries["max"]
+        recipient.update({
+            "status": primary["status"],
+            "error": primary["error"],
+            "deliveries": deliveries,
+        })
+        prepared.append(recipient)
+
     if not stats["ready"]:
         raise UploadValidationError("В Excel-файле нет корректных получателей.")
-    return recipients, stats
+    return prepared, stats
+
+
+def parse_recipients(
+    file_content: bytes,
+    message: str,
+    *,
+    message_limit: int,
+    targets: set[str] | None = None,
+    amo_users: dict[int, list[dict[str, int | None]]] | None = None,
+) -> tuple[list[dict[str, Any]], dict[str, Any]]:
+    recipients = parse_recipient_rows(file_content)
+    return prepare_recipients(
+        recipients,
+        message,
+        message_limit=message_limit,
+        targets=targets,
+        amo_users=amo_users,
+    )
 
 
 def validate_buttons(buttons: list[dict[str, str]]) -> list[dict[str, str]]:

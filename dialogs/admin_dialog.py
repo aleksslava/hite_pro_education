@@ -61,64 +61,6 @@ async def add_admin_input(message: Message, _, dialog_manager: DialogManager):
     await message.answer(f"Пользователю tg_id={tg_id} назначены права администратора.")
     await dialog_manager.switch_to(AdminDialog.admin_menu)
 
-async def second_admin_button(
-    callback: CallbackQuery,
-    button: Button,
-    dialog_manager: DialogManager,
-):
-    session: AsyncSession = dialog_manager.middleware_data["session"]
-
-    result = await session.execute(
-        select(User)
-        .options(selectinload(User.lesson_results))
-        .order_by(User.id)
-    )
-    users = result.scalars().all()
-
-    if not users:
-        await callback.message.answer("Пользователи в БД не найдены.")
-        return
-
-    lines = ["Результаты уроков по пользователям", ""]
-    total_lessons = 0
-
-    for user in users:
-        lessons = sorted(user.lesson_results or [], key=lambda l: l.id or 0)
-        total_lessons += len(lessons)
-        lines.append(
-            f"user_id={user.id} tg_id={user.tg_user_id} "
-            f"name={user.first_name or '-'} {user.last_name or '-'}"
-        )
-        if not lessons:
-            lines.append("  результатов нет")
-            continue
-
-        for lesson in lessons:
-            lines.append(
-                "  "
-                + " | ".join(
-                    [
-                        f"lesson_id={lesson.id}",
-                        f"key={lesson.lesson_key}",
-                        f"score={lesson.score if lesson.score is not None else '-'}",
-                        f"compleat={lesson.compleat}",
-                        f"started_at={lesson.started_at or '-'}",
-                        f"completed_at={lesson.completed_at or '-'}",
-                    ]
-                )
-            )
-
-        lines.append("")
-
-    lines.insert(1, f"Всего результатов: {total_lessons}")
-
-    message = "\n".join(lines)
-
-    # Telegram limit ~4096 chars per message
-    max_len = 3900
-    for i in range(0, len(message), max_len):
-        await callback.message.answer(message[i : i + max_len])
-
 async def delete_user_start(
     callback: CallbackQuery,
     button: Button,
@@ -373,10 +315,6 @@ Const('Выберите нужный пункт меню'),
             Button(Const("Добавить администратора"),
                    id="1",
                    on_click=add_admin_button,
-                   ),
-            Button(Const("Результаты прохождений"),
-                   id="2",
-                   on_click=second_admin_button,
                    ),
             Button(Const("Удалить пользователя"),
                    id="3",

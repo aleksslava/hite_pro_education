@@ -25,7 +25,7 @@
     </div></div>
     <div class="form-section"><div class="section-number">03</div><div class="form-section-body">
         <h2>Получатели и запуск</h2>
-        <label><span>Excel со списком</span><input type="file" name="recipients_file" accept=".xlsx" required><small>Обязательные колонки: telegram_id, max_id и Имя.</small></label>
+        <label><span>Excel со списком</span><input type="file" name="recipients_file" accept=".xlsx" required><small>Обязательные колонки: telegram_id, max_id и Имя. Необязательная amo_deal_id используется, если оба ID пусты.</small></label>
         <label><span>Дата и время по Москве</span><input type="datetime-local" name="scheduled_at" value="{{ values.get('scheduled_at', '') }}"><small>Оставьте пустым для запуска сразу после подтверждения.</small></label>
     </div></div>
     <div class="form-actions"><button type="submit" class="primary-button">Проверить и продолжить</button></div>

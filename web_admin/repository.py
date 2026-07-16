@@ -7,12 +7,31 @@ from sqlalchemy import func, select, update
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 from sqlalchemy.orm import selectinload
 
-from db.models import Broadcast, BroadcastButton, BroadcastDelivery, BroadcastRecipient
+from db.models import Broadcast, BroadcastButton, BroadcastDelivery, BroadcastRecipient, User
 
 
 class BroadcastRepository:
     def __init__(self, session_factory: async_sessionmaker[AsyncSession]):
         self.session_factory = session_factory
+
+    async def resolve_amo_users(
+        self,
+        amo_deal_ids: set[int],
+    ) -> dict[int, list[dict[str, int | None]]]:
+        if not amo_deal_ids:
+            return {}
+        async with self.session_factory() as session:
+            result = await session.execute(
+                select(User.amo_deal_id, User.tg_user_id, User.max_user_id)
+                .where(User.amo_deal_id.in_(amo_deal_ids))
+            )
+            users: dict[int, list[dict[str, int | None]]] = {}
+            for amo_deal_id, telegram_id, max_id in result.all():
+                users.setdefault(amo_deal_id, []).append({
+                    "telegram_id": telegram_id,
+                    "max_id": max_id,
+                })
+            return users
 
     async def create_draft(
         self,
@@ -63,6 +82,8 @@ class BroadcastRepository:
                     raw_telegram_id=item["raw_telegram_id"],
                     max_id=item["max_id"],
                     raw_max_id=item["raw_max_id"],
+                    amo_deal_id=item["amo_deal_id"],
+                    raw_amo_deal_id=item["raw_amo_deal_id"],
                     name=item["name"],
                 )
                 session.add(recipient)

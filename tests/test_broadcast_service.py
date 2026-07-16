@@ -135,6 +135,9 @@ def test_web_editor_creates_dual_channel_draft(tmp_path) -> None:
     )
     repository = AsyncMock()
     repository.create_draft.return_value = 1
+    repository.resolve_amo_users.return_value = {
+        501: [{"telegram_id": 123, "max_id": 9001}]
+    }
     broadcast = Broadcast(
         id=1,
         message="Привет, [Имя]!",
@@ -185,7 +188,7 @@ def test_web_editor_creates_dual_channel_draft(tmp_path) -> None:
             files={
                 "recipients_file": (
                     "users.xlsx",
-                    make_xlsx([(123, 9001, "Анна")]),
+                    make_xlsx([("", "", "Анна", 501)], include_amo=True),
                     "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
                 )
             },
@@ -193,7 +196,11 @@ def test_web_editor_creates_dual_channel_draft(tmp_path) -> None:
 
     assert response.status_code == 200
     assert "Telegram" in response.text and "MAX" in response.text
+    assert "501" in response.text
+    repository.resolve_amo_users.assert_awaited_once_with({501})
     assert repository.create_draft.await_args.kwargs["targets"] == {"telegram", "max"}
+    recipient = repository.create_draft.await_args.kwargs["recipients"][0]
+    assert (recipient["telegram_id"], recipient["max_id"]) == (123, 9001)
 
 
 @pytest.mark.asyncio

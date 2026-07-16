@@ -13,10 +13,13 @@ from web_admin.validation import (
 )
 
 
-def make_xlsx(rows: list[tuple[object, object, object]]) -> bytes:
+def make_xlsx(rows: list[tuple[object, ...]], *, include_amo: bool = False) -> bytes:
     workbook = Workbook()
     sheet = workbook.active
-    sheet.append(["telegram_id", "max_id", "Имя"])
+    headers = ["telegram_id", "max_id", "Имя"]
+    if include_amo:
+        headers.append("amo_deal_id")
+    sheet.append(headers)
     for row in rows:
         sheet.append(row)
     output = BytesIO()
@@ -140,3 +143,116 @@ def test_excel_allows_max_only_without_telegram_id() -> None:
     )
     assert recipients[0]["deliveries"]["max"]["status"] == "pending"
     assert stats["ready"] == 1
+
+
+def test_excel_resolves_both_ids_by_amo_deal_id() -> None:
+    recipients, stats = parse_recipients(
+        make_xlsx([("", "", "Анна", 501)], include_amo=True),
+        "Привет, [Имя]!",
+        message_limit=4096,
+        targets={"telegram", "max"},
+        amo_users={501: [{"telegram_id": 123, "max_id": 9001}]},
+    )
+    recipient = recipients[0]
+    assert recipient["amo_deal_id"] == 501
+    assert (recipient["telegram_id"], recipient["max_id"]) == (123, 9001)
+    assert recipient["deliveries"]["telegram"]["status"] == "pending"
+    assert recipient["deliveries"]["max"]["status"] == "pending"
+    assert stats["ready"] == 2
+
+
+def test_excel_marks_missing_database_platform_id_as_skipped() -> None:
+    recipients, stats = parse_recipients(
+        make_xlsx([("", "", "Анна", 502)], include_amo=True),
+        "Привет!",
+        message_limit=4096,
+        targets={"telegram", "max"},
+        amo_users={502: [{"telegram_id": 124, "max_id": None}]},
+    )
+    assert recipients[0]["deliveries"]["telegram"]["status"] == "pending"
+    assert recipients[0]["deliveries"]["max"]["status"] == "skipped"
+    assert "max_user_id" in recipients[0]["deliveries"]["max"]["error"]
+    assert stats["ready"] == 1
+
+
+@pytest.mark.parametrize(
+    ("amo_users", "error_text"),
+    [
+        ({}, "не найден"),
+        (
+            {503: [{"telegram_id": 125, "max_id": None}, {"telegram_id": 126, "max_id": None}]},
+            "несколько пользователей",
+        ),
+    ],
+)
+def test_excel_skips_missing_or_ambiguous_amo_deal(
+    amo_users: dict[int, list[dict[str, int | None]]],
+    error_text: str,
+) -> None:
+    recipients, _ = parse_recipients(
+        make_xlsx([
+            (777, "", "Рабочая строка", ""),
+            ("", "", "Анна", 503),
+        ], include_amo=True),
+        "Привет!",
+        message_limit=4096,
+        amo_users=amo_users,
+    )
+    assert recipients[1]["status"] == "skipped"
+    assert error_text in recipients[1]["error"]
+
+
+def test_direct_id_disables_amo_fallback_even_when_invalid() -> None:
+    recipients, _ = parse_recipients(
+        make_xlsx([
+            (777, "", "Рабочая строка", ""),
+            ("wrong", "", "Анна", 504),
+        ], include_amo=True),
+        "Привет!",
+        message_limit=4096,
+        amo_users={504: [{"telegram_id": 128, "max_id": 9004}]},
+    )
+    assert recipients[1]["telegram_id"] is None
+    assert recipients[1]["error"] == "Некорректный telegram_id"
+
+
+def test_invalid_amo_deal_id_is_skipped() -> None:
+    recipients, _ = parse_recipients(
+        make_xlsx([
+            (777, "", "Рабочая строка", ""),
+            ("", "", "Анна", "not-a-number"),
+        ], include_amo=True),
+        "Привет!",
+        message_limit=4096,
+    )
+    assert recipients[1]["status"] == "skipped"
+    assert recipients[1]["error"] == "Некорректный amo_deal_id"
+
+
+def test_amo_resolution_respects_selected_channels() -> None:
+    recipients, stats = parse_recipients(
+        make_xlsx([("", "", "Анна", 506)], include_amo=True),
+        "Привет!",
+        message_limit=4096,
+        targets={"max"},
+        amo_users={506: [{"telegram_id": 131, "max_id": 9011}]},
+    )
+    assert set(recipients[0]["deliveries"]) == {"max"}
+    assert recipients[0]["deliveries"]["max"]["status"] == "pending"
+    assert stats["ready"] == 1
+
+
+def test_duplicates_are_checked_after_amo_resolution() -> None:
+    recipients, stats = parse_recipients(
+        make_xlsx([
+            (130, 9010, "Прямой", ""),
+            ("", "", "По сделке", 505),
+        ], include_amo=True),
+        "Привет!",
+        message_limit=4096,
+        targets={"telegram", "max"},
+        amo_users={505: [{"telegram_id": 130, "max_id": 9010}]},
+    )
+    assert recipients[1]["deliveries"]["telegram"]["error"] == "Повторный telegram_id"
+    assert recipients[1]["deliveries"]["max"]["error"] == "Повторный max_id"
+    assert stats["duplicates"] == 2

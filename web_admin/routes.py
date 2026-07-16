@@ -23,7 +23,9 @@ from web_admin.validation import (
     TELEGRAM_TEXT_LIMIT,
     MAX_TEXT_LIMIT,
     UploadValidationError,
-    parse_recipients,
+    collect_amo_deal_ids,
+    parse_recipient_rows,
+    prepare_recipients,
     adapt_telegram_html_for_max,
     render_message,
     validate_buttons,
@@ -232,14 +234,22 @@ def create_admin_router(prefix: str) -> APIRouter:
             if "max" in targets:
                 adapt_telegram_html_for_max(message, limit=MAX_TEXT_LIMIT)
             excel_content = await recipients_file.read(MAX_XLSX_SIZE + 1)
+            recipient_rows = await asyncio.to_thread(parse_recipient_rows, excel_content)
+            amo_deal_ids = collect_amo_deal_ids(recipient_rows)
+            service = request.app.state.admin_service
+            amo_users = (
+                await service.repository.resolve_amo_users(amo_deal_ids)
+                if amo_deal_ids
+                else {}
+            )
             recipients, stats = await asyncio.to_thread(
-                parse_recipients,
-                excel_content,
+                prepare_recipients,
+                recipient_rows,
                 message,
                 message_limit=telegram_limit,
                 targets=targets,
+                amo_users=amo_users,
             )
-            service = request.app.state.admin_service
             if media_kind and media_original_name:
                 media_path = service.media_dir / f"{uuid.uuid4().hex}{Path(media_original_name).suffix.casefold()}"
                 await asyncio.to_thread(media_path.write_bytes, media_content)

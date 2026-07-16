@@ -19,7 +19,7 @@ class User(Base):
     first_name: Mapped[str | None] = mapped_column(String(128), nullable=True)
     last_name: Mapped[str | None] = mapped_column(String(128), nullable=True)
     amo_contact_id: Mapped[int | None] = mapped_column(BigInteger, nullable=True, unique=True)
-    amo_deal_id: Mapped[int | None] = mapped_column(BigInteger, nullable=True)
+    amo_deal_id: Mapped[int | None] = mapped_column(BigInteger, nullable=True, index=True)
     utm_campaign: Mapped[str | None] = mapped_column(String(255), nullable=True)
     utm_medium: Mapped[str | None] = mapped_column(String(255), nullable=True)
     utm_content: Mapped[str | None] = mapped_column(String(255), nullable=True)
@@ -113,6 +113,8 @@ class BroadcastRecipient(Base):
     raw_telegram_id: Mapped[str | None] = mapped_column(String(128), nullable=True)
     max_id: Mapped[int | None] = mapped_column(BigInteger, nullable=True)
     raw_max_id: Mapped[str | None] = mapped_column(String(128), nullable=True)
+    amo_deal_id: Mapped[int | None] = mapped_column(BigInteger, nullable=True)
+    raw_amo_deal_id: Mapped[str | None] = mapped_column(String(128), nullable=True)
     name: Mapped[str] = mapped_column(String(255), default="")
 
     broadcast: Mapped[Broadcast] = relationship(back_populates="recipients")
